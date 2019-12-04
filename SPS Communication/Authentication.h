@@ -41,7 +41,7 @@ public:
 	{
 	}
 
-	auto& resolve_connect(std::string_view host)
+	auto& connect(std::string_view host)
 	{
 		m_socket = std::make_unique<tcp::socket>(m_io);
 
@@ -67,6 +67,11 @@ public:
 		return *m_socket;
 	}
 
+	asio::io_context& used_io() noexcept
+	{
+		return m_io;
+	}
+
 private:
 	asio::io_context& m_io;
 	std::string m_message;
@@ -90,11 +95,16 @@ class ERequester
 			<< "Connection: close\r\n\r\n";
 
 		asio::write(pthis().socket(), buf);
+
+
 	}
 
 	void _validate_reponse_()
 	{
-		std::istream response_s(&m_buffer);
+		asio::streambuf buf;
+		asio::read_until(pthis().socket(), buf, "\r\n");
+		std::istream response_s(&buf);
+
 		std::string http_version;
 		unsigned int status_code;
 		response_s >> http_version >> status_code;
@@ -106,27 +116,53 @@ class ERequester
 			throw std::runtime_error("Invalid response\n");
 		if (status_code != 200)
 			throw std::runtime_error("Response returned with status code " + std::to_string(status_code) + "\nMessage: " + status_message);
-
-
 	}
 
-	void _read_(tcp::socket& socket)
+	void _read_headers_()
 	{
-		asio::read_until(socket, m_buf);
+		asio::streambuf buf;
+		asio::read_until(pthis().socket(), buf, "\r\n\r\n");
+		std::istream response_s(&buf);
+
+
 	}
 
 public:
-	ERequester(asio::io_context& io)
-		: m_io(io)
-	{
-	}
-
 	Content request(std::string_view host, std::string_view path)
 	{
 		pthis().resolve_connect(host, path);
 
 		_send_request_(host, path);
-		
+		_validate_reponse_();
+
+
+	}
+
+	auto& prep_request(std::string_view host, std::string_view path)
+	{
+		std::ostream r(m_buf);
+		r << "GET " << path << " HTTP/1.0\r\n"
+			<< "Host: " << host << "\r\n"
+			<< "Accept: */*\r\n"
+			<< "Connection: close\r\n\r\n";
+
+		return *this;
+	}
+
+	auto& write()
+	{
+		asio::write(pthis().socket(), buf);
+		return *this;
+	}
+
+	auto& read_until(std::string_view str)
+	{
+		asio::read_until(pthis().socket(), buf, str);
+		return *this;
+	}
+
+	auto& validate()
+	{
 
 	}
 
