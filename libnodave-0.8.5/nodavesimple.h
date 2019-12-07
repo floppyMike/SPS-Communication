@@ -229,7 +229,7 @@ EXPORTSPEC int DECL2 daveGetDebug(void);
     Some data types:
 */
 #define uc unsigned char
-#define us unsigned short
+//#define us unsigned short
 #define u32 unsigned int
 
 /* 

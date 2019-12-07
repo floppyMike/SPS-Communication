@@ -29,14 +29,14 @@
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Authentication.h">
-      <Filter>Header Files\Wifi Connection</Filter>
-    </ClInclude>
     <ClInclude Include="Includes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="SPS.h">
       <Filter>Header Files\SPS Connection</Filter>
+    </ClInclude>
+    <ClInclude Include="Server.h">
+      <Filter>Header Files\Wifi Connection</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

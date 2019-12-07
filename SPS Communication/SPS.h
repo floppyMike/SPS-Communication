@@ -11,14 +11,14 @@ public:
 	void connect(std::string_view port)
 	{
 		std::clog << "Connection to port...";
-		m_serial.rfd = setPort(port, "38400", 'O');
+		m_serial.rfd = setPort(::_strdup(port.data()), ::_strdup("38400"), 'O');
 		m_serial.wfd = m_serial.rfd;
 		if (m_serial.rfd == 0)
-			throw std::runtime_error("Couldn't open serial port" + port);
+			throw std::runtime_error("Couldn't open serial port" + std::string(port));
 		std::clog << "Done\n";
 
-		m_interface = daveNewInterface(m_serial, "IF1", daveProtoMPI, daveSpeed187k);
-		daveSetTimeout(di, 5000000);
+		m_interface = daveNewInterface(m_serial, ::_strdup("IF1"), 0, daveProtoMPI, daveSpeed187k);
+		daveSetTimeout(m_interface, 5000000);
 
 		std::clog << "Initializing adapter...";
 		for (size_t i = 0; i < 3; ++i)
@@ -42,8 +42,8 @@ public:
 	}
 
 private:
-	daveInterface m_interface;
-	daveConnection m_connection;
+	daveInterface* m_interface;
+	daveConnection* m_connection;
 	_daveOSserialType m_serial;
 };
 
