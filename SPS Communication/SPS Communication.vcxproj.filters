@@ -35,5 +35,8 @@
     <ClInclude Include="Includes.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="SPS.h">
+      <Filter>Header Files\SPS Connection</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

@@ -132,6 +132,7 @@
   <ItemGroup>
     <ClInclude Include="Authentication.h" />
     <ClInclude Include="Includes.h" />
+    <ClInclude Include="SPS.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
