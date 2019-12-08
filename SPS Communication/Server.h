@@ -96,10 +96,7 @@ private:
 	void _read_headers_()
 	{
 		const auto n = asio::read_until(m_socket, m_buf, "\r\n\r\n");
-
-		asio::streambuf::const_buffers_type buf_type = m_buf.data();
-		m_message.header = std::string(asio::buffers_begin(buf_type), asio::buffers_begin(buf_type) + n - 4);
-
+		m_message.header = _buf_to_str_(n - 4);
 		m_buf.consume(n);
 	}
 
@@ -108,19 +105,24 @@ private:
 		while (true)
 		{
 			std::error_code err;
-			const auto size = asio::read(m_socket, m_buf, err);
+			const auto n = m_buf.size() + asio::read(m_socket, m_buf, err);
 
 			if (err == asio::error::eof)
 			{
-				asio::streambuf::const_buffers_type buf_type = m_buf.data();
-				m_message.content.append(asio::buffers_begin(buf_type), asio::buffers_begin(buf_type) + size);
+				m_message.content.append(_buf_to_str_(n));
 				break;
 			}
 			else if (err)
 				throw std::runtime_error(err.message());
 
-			asio::streambuf::const_buffers_type buf_type = m_buf.data();
-			m_message.content.append(asio::buffers_begin(buf_type), asio::buffers_begin(buf_type) + size);
+			m_message.content.append(_buf_to_str_(n));
+			m_buf.consume(n);
 		}
+	}
+
+	std::string _buf_to_str_(size_t len)
+	{
+		asio::streambuf::const_buffers_type buf_type = m_buf.data();
+		return std::string(asio::buffers_begin(buf_type), asio::buffers_begin(buf_type) + len);
 	}
 };

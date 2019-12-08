@@ -5,8 +5,8 @@
 
 int main(int argc, char** argv)
 {
-	SPS sps;
-	sps.connect(argv[1]);
+	//SPS sps;
+	//sps.connect(argv[1]);
 
 	asio::io_context io;
 
