@@ -13,5 +13,30 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
+    <Filter Include="Header Files\Wifi Connection">
+      <UniqueIdentifier>{fe372f71-63c6-42cc-82f7-ed0be0959763}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\SPS Connection">
+      <UniqueIdentifier>{309cb73a-36d0-4317-945c-31f0a002695a}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\Processing">
+      <UniqueIdentifier>{c9381130-8930-400d-b6cf-c6e9712f4bad}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="main.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Includes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="SPS.h">
+      <Filter>Header Files\SPS Connection</Filter>
+    </ClInclude>
+    <ClInclude Include="Server.h">
+      <Filter>Header Files\Wifi Connection</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
