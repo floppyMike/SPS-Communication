@@ -25,6 +25,7 @@ int main(int argc, char** argv)
 		{
 			auth_code = query<Session>(io, "feeds.bbci.co.uk", "/news/world/rss.xml").content;
 			//auth_code = query<Session>(io, "www.ipdatacorp.com", "/mmurtl/mmurtlv1.pdf").content; //Hard test
+			break;
 		}
 		catch (const std::exception& e)
 		{
