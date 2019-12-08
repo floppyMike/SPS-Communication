@@ -2,6 +2,7 @@
 
 #include <iostream>
 #include <string>
+#include <fstream>
 
 #define BCCWIN
 #include <nodavesimple.h>

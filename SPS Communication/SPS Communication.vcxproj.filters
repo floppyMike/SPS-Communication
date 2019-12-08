@@ -38,5 +38,8 @@
     <ClInclude Include="Server.h">
       <Filter>Header Files\Wifi Connection</Filter>
     </ClInclude>
+    <ClInclude Include="Logging.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

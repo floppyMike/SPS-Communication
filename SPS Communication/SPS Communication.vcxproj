@@ -134,6 +134,7 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Logging.h" />
     <ClInclude Include="Server.h" />
     <ClInclude Include="Includes.h" />
     <ClInclude Include="SPS.h" />

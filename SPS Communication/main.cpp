@@ -16,6 +16,8 @@ int main(int argc, char** argv)
 	//SPS sps;
 	//sps.connect(argv[1]);
 
+	g_log.seperate();
+
 	asio::io_context io;
 
 	std::string auth_code;
@@ -29,13 +31,15 @@ int main(int argc, char** argv)
 		}
 		catch (const std::exception& e)
 		{
-			std::cerr << "Failed getting authentication code. ";
+			g_log.write("Failed getting authentication code. ");
 			if (test_case == 2)
 				return 1;
-			std::cerr << "Trying again " << test_case << " of 3.\n";
+			g_log.write(std::string("Trying again... ") + static_cast<char>(test_case - '0') + " of 3.\n");
 		}
 	}
 	std::cout << auth_code << "\n\n\n";
+
+	g_log.seperate();
 
 	//Connect to host and wait for request
 	
