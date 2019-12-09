@@ -11,7 +11,7 @@ public:
 	void connect(std::string_view port)
 	{
 		g_log.initiate("connection to port");
-		m_serial.rfd = setPort(::_strdup(port.data()), ::_strdup("38400"), 'O');
+		m_serial.rfd = setPort(::_strdup(port.data()), ::_strdup("38400"), 'N');
 		m_serial.wfd = m_serial.rfd;
 		if (m_serial.rfd == 0)
 			throw std::runtime_error("Couldn't open serial port" + std::string(port));

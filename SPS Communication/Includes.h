@@ -3,6 +3,7 @@
 #include <iostream>
 #include <string>
 #include <fstream>
+#include <thread>
 
 #define BCCWIN
 #include <nodavesimple.h>

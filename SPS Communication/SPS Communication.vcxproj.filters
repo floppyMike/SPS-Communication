@@ -41,5 +41,8 @@
     <ClInclude Include="Logging.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="RequestBuffer.h">
+      <Filter>Header Files\Wifi Connection</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>
