@@ -26,7 +26,7 @@ int main(int argc, char** argv)
 	{
 		try
 		{
-			auth_code = query<Session>(io, "feeds.bbci.co.uk", "/news/world/rss.xml").content; //Soft test
+			auth_code = query<Session>(io, "localhost", "/data.txt").content; //Soft test
 			//auth_code = query<Session>(io, "www.ipdatacorp.com", "/mmurtl/mmurtlv1.pdf").content; //Hard test
 			break;
 		}

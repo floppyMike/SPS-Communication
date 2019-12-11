@@ -6,7 +6,10 @@ class Logger
 public:
 	static constexpr std::string_view LOG_FILE = "log.txt";
 
-	Logger() = default;
+	Logger()
+	{
+		std::ofstream(LOG_FILE.data());
+	}
 	Logger(std::string_view message)
 		: m_buffer(message)
 	{

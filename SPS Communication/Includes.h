@@ -4,6 +4,7 @@
 #include <string>
 #include <fstream>
 #include <thread>
+#include <queue>
 
 #define BCCWIN
 #include <nodavesimple.h>
