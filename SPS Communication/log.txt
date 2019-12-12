@@ -1,8 +1,0 @@
-
-----------------------------------------
-
-Initiating connection to host...Done
-Initiating message reader...Done
-
-----------------------------------------
-

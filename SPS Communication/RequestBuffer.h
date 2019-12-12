@@ -41,6 +41,8 @@ public:
 	{
 	}
 
+
+
 private:
 	std::thread m_handler;
 	

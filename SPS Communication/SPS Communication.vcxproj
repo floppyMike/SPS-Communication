@@ -135,7 +135,11 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Logging.h" />
-    <ClInclude Include="RequestBuffer.h" />
+    <ClInclude Include="Parser.h" />
+    <ClInclude Include="RequestBuffer.h">
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">true</ExcludedFromBuild>
+      <ExcludedFromBuild Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">true</ExcludedFromBuild>
+    </ClInclude>
     <ClInclude Include="Server.h" />
     <ClInclude Include="Includes.h" />
     <ClInclude Include="SPS.h" />
