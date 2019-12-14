@@ -1,6 +1,7 @@
 #include "Includes.h"
 #include "Server.h"
 #include "SPS.h"
+#include "Parser.h"
 
 std::string get_auth_code(asio::io_context& io)
 {
@@ -50,9 +51,9 @@ int main(int argc, char** argv)
 		//Get message
 		auto message = query<Session>(io, "localhost", "/data.txt");
 
-		//Check for DEBUG stuff
+		MessageCommands commands;
+		commands.parse_message(std::move(message.content));
 
-		//
 	}
 
 
