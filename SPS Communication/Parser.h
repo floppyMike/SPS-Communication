@@ -61,20 +61,28 @@ public:
 	{
 		auto ptr = message.begin();
 
+		g_log.initiate("#START check");
 		if (!_contains_header_(START, ptr))
 			throw Logger("Message synthax incorrect. Missing #START.");
 		ptr += START.size();
+		g_log.complete();
 
+		g_log.initiate("#DEBUG check");
 		if (_contains_header_(DEBUG, ptr))
 			_print_debug_(message, ptr);
+		g_log.complete();
 
+		g_log.initiate("#DATA extractor");
 		if (_contains_header_(DATA, ptr))
 			_extract_commands_(message, ptr);
 		else
 			throw Logger("Message synthax incorrect. Missing #DATA.");
+		g_log.complete();
 
+		g_log.initiate("#END check");
 		if (!_contains_header_(END, ptr))
 			throw Logger("Message synthax incorrect. Missing #END.");
+		g_log.complete();
 	}
 
 private:

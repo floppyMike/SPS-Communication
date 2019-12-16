@@ -58,6 +58,8 @@ int main(int argc, char** argv)
 		till_next += std::chrono::seconds(commands.get("requesttimeout").val);
 
 
+
+		g_log.seperate();
 	}
 
 
