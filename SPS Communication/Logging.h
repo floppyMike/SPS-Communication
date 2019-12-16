@@ -37,17 +37,19 @@ public:
 		write("\n----------------------------------------\n\n");
 	}
 
-	void write(std::string_view val)
+	Logger& write(std::string_view val)
 	{
-		write(val.data(), val.size());
+		return write(val.data(), val.size());
 	}
 
-	void write(const char* str, size_t amount)
+	Logger& write(const char* str, size_t amount)
 	{
 		std::scoped_lock lock(m_mutex);
 		_write_noflush_(str, amount);
 		if (m_buffer.size() >= 1024)
 			_flush_();
+
+		return *this;
 	}
 
 private:

@@ -46,13 +46,16 @@ int main(int argc, char** argv)
 
 	g_log.seperate();
 
-	for (auto [quit, till_next] = std::pair(true, std::chrono::steady_clock::now()); quit;)
+	for (auto [quit, till_next] = std::pair(false, std::chrono::steady_clock::now()); !quit;)
 	{
-		//Get message
+		std::this_thread::sleep_until(till_next);
+
 		auto message = query<Session>(io, "localhost", "/data.txt");
 
 		MessageCommands commands;
 		commands.parse_message(message.content);
+
+		till_next += std::chrono::seconds(commands.get("requesttimeout").val);
 
 
 	}

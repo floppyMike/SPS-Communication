@@ -2,24 +2,43 @@
 #include "Includes.h"
 #include "Logging.h"
 
-template<typename T>
 struct Command
 {
 	std::string name;
-	T val;
+	int val;
 };
 
 
 template<template<typename> class... Ex>
-class basic_MessageCommands : std::vector<Command<int>>, public Ex<basic_MessageCommands<Ex...>>...
+class basic_MessageCommands : std::vector<Command>, public Ex<basic_MessageCommands<Ex...>>...
 {
-	using vec_t = std::vector<Command<int>>;
+	using vec_t = std::vector<Command>;
 
 public:
 	basic_MessageCommands() = default;
 
 	vec_t::emplace_back;
 
+	Command get()
+	{
+		assert(this->begin() != this->end() && "vector is empty");
+
+		Command&& temp = std::move(this->back());
+		this->pop_back();
+		return temp;
+	}
+
+	Command get(std::string_view name)
+	{
+		auto temp_iter = std::find_if(this->begin(), this->end(), 
+			[&name](const Command& com) constexpr { return com.name == name; });
+
+		assert(temp_iter != this->end() && "element not found");
+
+		Command&& temp = std::move(*temp_iter);
+		this->erase(temp_iter);
+		return temp;
+	}
 };
 
 
@@ -70,7 +89,7 @@ private:
 
 		const auto dist = std::distance(message.begin(), ptr);
 		const auto delta_dist = message.find('#', dist) - dist;
-		g_log.write(&*ptr, delta_dist);
+		g_log.write("DEBUG: ").write(&*ptr, delta_dist);
 
 		ptr += delta_dist;
 	}
@@ -81,7 +100,7 @@ private:
 
 		for (const auto end = message.end() - END.size(); ptr < end;)
 		{
-			Command<int> com;
+			Command com;
 			++ptr; //Skip first bracket
 
 			com.name = _extract_till_(message, ptr, ']');
