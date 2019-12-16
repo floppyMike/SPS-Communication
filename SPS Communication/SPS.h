@@ -1,6 +1,6 @@
 #pragma once
-
 #include "Includes.h"
+#include "Logging.h"
 
 template<template<typename> class... Ex>
 class basic_SPS : public Ex<basic_SPS<Ex...>>...
@@ -10,17 +10,17 @@ public:
 
 	void connect(std::string_view port)
 	{
-		std::clog << "Connection to port...";
-		m_serial.rfd = setPort(::_strdup(port.data()), ::_strdup("38400"), 'O');
+		g_log.initiate("connection to port");
+		m_serial.rfd = setPort(::_strdup(port.data()), ::_strdup("38400"), 'N');
 		m_serial.wfd = m_serial.rfd;
 		if (m_serial.rfd == 0)
 			throw std::runtime_error("Couldn't open serial port" + std::string(port));
-		std::clog << "Done\n";
+		g_log.complete();
 
 		m_interface = daveNewInterface(m_serial, ::_strdup("IF1"), 0, daveProtoMPI, daveSpeed187k);
 		daveSetTimeout(m_interface, 5000000);
 
-		std::clog << "Initializing adapter...";
+		g_log.initiate("adapter");
 		for (size_t i = 0; i < 3; ++i)
 			if (daveInitAdapter(m_interface) == 0)
 				break;
@@ -30,15 +30,13 @@ public:
 				if (i == 2)
 					throw std::runtime_error("Couldn't connect to Adapter.");
 			}
-		std::clog << "Done\n";
+		g_log.complete();
 
-		std::clog << "Connecting to PLC...";
+		g_log.initiate("connection to SPS");
 		m_connection = daveNewConnection(m_interface, 2, 0, 0);
 		if (daveConnectPLC(m_connection) == 0)
 			throw std::runtime_error("Couldn't connect to PLC.");
-		std::clog << "Done\n";
-
-		std::clog << "\n----------------------------------------\n\n";
+		g_log.complete();
 	}
 
 private:

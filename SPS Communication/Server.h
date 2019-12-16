@@ -1,5 +1,6 @@
 #pragma once
 #include "Includes.h"
+#include "Logging.h"
 
 struct Results
 {
@@ -11,17 +12,15 @@ Results query(asio::io_context& io, std::string_view host, std::string_view path
 {
 	session_t session(io);
 
-	std::clog << "Connecting to Host...";
+	g_log.initiate("connection to host");
 	tcp::resolver r(io);
 	tcp::resolver::query q(std::string(host), "http");
 	asio::connect(session.socket(), r.resolve(q));
-	std::clog << "Done\n";
+	g_log.complete();
 
-	std::clog << "Reading message...";
+	g_log.initiate("message reader");
 	auto message = session.query(host, path);
-	std::clog << "Done\n";
-
-	std::clog << "\n----------------------------------------\n\n";
+	g_log.complete();
 
 	return message;
 }
