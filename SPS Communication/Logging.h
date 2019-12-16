@@ -39,14 +39,15 @@ public:
 
 	void write(std::string_view val)
 	{
+		write(val.data(), val.size());
+	}
+
+	void write(const char* str, size_t amount)
+	{
 		std::scoped_lock lock(m_mutex);
-		_write_noflush_(val);
+		_write_noflush_(str, amount);
 		if (m_buffer.size() >= 1024)
-		{
-			std::ofstream file(LOG_FILE.data(), std::ios::out | std::ios::binary);
-			file.write(m_buffer.data(), m_buffer.size());
-			m_buffer.clear();
-		}
+			_flush_();
 	}
 
 private:
@@ -54,10 +55,22 @@ private:
 	std::string m_buffer;
 
 
-	void _write_noflush_(std::string_view val)
+	void _write_noflush_(const char* str, size_t amount)
 	{
-		std::clog << val;
-		m_buffer += val;
+		std::clog.write(str, amount);
+		m_buffer.append(str, amount);
+	}
+	void _write_noflush_(std::string_view str)
+	{
+		std::clog << str;
+		m_buffer.append(str);
+	}
+
+	void _flush_()
+	{
+		std::ofstream file(LOG_FILE.data(), std::ios::out | std::ios::binary);
+		file.write(m_buffer.data(), m_buffer.size());
+		m_buffer.clear();
 	}
 };
 

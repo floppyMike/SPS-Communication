@@ -36,72 +36,75 @@ public:
 
 	static constexpr std::string_view ASSIGN = "=>";
 
-	void parse_message(std::string&& messagea)
+	EParser() = default;
+
+	void parse_message(std::string_view message)
 	{
-		auto message = std::string_view(messagea);
 		auto ptr = message.begin();
 
-		auto ptr_dist = [&message, &ptr] { return std::distance(message.begin(), ptr); };
-
-		if (!std::equal(ptr, ptr + START.size() - 1, START.begin()))
+		if (!_contains_header_(START, ptr))
 			throw Logger("Message synthax incorrect. Missing #START.");
-
 		ptr += START.size();
 
-		if (std::equal(ptr, ptr + DEBUG.size() - 1, DEBUG.begin()))
-		{
-			ptr += DEBUG.size();
+		if (_contains_header_(DEBUG, ptr))
+			_print_debug_(message, ptr);
 
-			const auto dist = ptr_dist();
-			const auto delta_dist = message.find('#', dist) - dist;
-
-			auto str = std::string(&*ptr, delta_dist);
-			g_log.write(str);
-
-			ptr += delta_dist;
-		}
-
-		if (std::equal(ptr, ptr + DATA.size() - 1, DATA.begin()))
-		{
-			ptr += DATA.size();
-
-			for (const auto end = message.end() - END.size(); ptr < end;)
-			{
-				Command<int> com;
-
-				++ptr;
-
-				{
-					const auto dist = ptr_dist();
-					const auto bracket_pair = message.find(']', dist);
-					com.name = message.substr(dist, bracket_pair - dist);
-					ptr += bracket_pair - dist + 1;
-				}
-
-				if (!std::equal(ptr, ptr + ASSIGN.size() - 1, ASSIGN.begin()))
-					throw Logger("Message synthax incorrect. Missing =>.");
-				ptr += ASSIGN.size();
-
-				{
-					const auto dist = ptr_dist();
-					const auto bracket_pair = message.find('\n', dist);
-					com.val = std::stoi(std::string(message.substr(dist, bracket_pair - dist)));
-					ptr += bracket_pair - dist;
-				}
-
-				++ptr;
-
-				pthis->emplace_back(com);
-			}
-
-			if (!std::equal(ptr, ptr + END.size() - 1, END.begin()))
-				throw Logger("Message synthax incorrect. Missing #END.");
-		}
+		if (_contains_header_(DATA, ptr))
+			_extract_commands_(message, ptr);
 		else
 			throw Logger("Message synthax incorrect. Missing #DATA.");
+
+		if (!_contains_header_(END, ptr))
+			throw Logger("Message synthax incorrect. Missing #END.");
 	}
 
 private:
+	bool _contains_header_(std::string_view header, std::string_view::const_iterator& ptr)
+	{
+		return std::equal(ptr, ptr + header.size() - 1, header.begin());
+	}
+
+	void _print_debug_(std::string_view message, std::string_view::const_iterator& ptr)
+	{
+		ptr += DEBUG.size();
+
+		const auto dist = std::distance(message.begin(), ptr);
+		const auto delta_dist = message.find('#', dist) - dist;
+		g_log.write(&*ptr, delta_dist);
+
+		ptr += delta_dist;
+	}
+
+	void _extract_commands_(std::string_view message, std::string_view::const_iterator& ptr)
+	{
+		ptr += DATA.size();
+
+		for (const auto end = message.end() - END.size(); ptr < end;)
+		{
+			Command<int> com;
+			++ptr; //Skip first bracket
+
+			com.name = _extract_till_(message, ptr, ']');
+
+			if (!std::equal(ptr, ptr + ASSIGN.size() - 1, ASSIGN.begin()))
+				throw Logger("Message synthax incorrect. Missing =>.");
+			ptr += ASSIGN.size();
+
+			auto str = _extract_till_(message, ptr, '\n');
+			std::from_chars(str.data(), str.data() + str.size(), com.val);
+
+			pthis->emplace_back(com);
+		}
+	}
+
+	std::string_view _extract_till_(std::string_view message, std::string_view::const_iterator& ptr, char delim)
+	{
+		const auto dist = std::distance(message.begin(), ptr);
+		const auto bracket_pair = message.find(delim, dist);
+		ptr += bracket_pair - dist + 1;
+
+		return message.substr(dist, bracket_pair - dist);
+	}
 
 };
 

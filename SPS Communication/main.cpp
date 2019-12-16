@@ -52,7 +52,8 @@ int main(int argc, char** argv)
 		auto message = query<Session>(io, "localhost", "/data.txt");
 
 		MessageCommands commands;
-		commands.parse_message(std::move(message.content));
+		commands.parse_message(message.content);
+
 
 	}
 

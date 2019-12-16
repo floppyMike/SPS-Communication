@@ -5,6 +5,7 @@
 #include <fstream>
 #include <thread>
 #include <queue>
+#include <charconv>
 
 #define BCCWIN
 #include <nodavesimple.h>
