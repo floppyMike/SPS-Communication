@@ -14,7 +14,7 @@ public:
 		m_serial.rfd = setPort(::_strdup(port.data()), ::_strdup("38400"), 'N');
 		m_serial.wfd = m_serial.rfd;
 		if (m_serial.rfd == 0)
-			throw std::runtime_error("Couldn't open serial port" + std::string(port));
+			throw Logger("Couldn't open serial port" + std::string(port));
 		g_log.complete();
 
 		m_interface = daveNewInterface(m_serial, ::_strdup("IF1"), 0, daveProtoMPI, daveSpeed187k);
@@ -35,7 +35,7 @@ public:
 		g_log.initiate("connection to SPS");
 		m_connection = daveNewConnection(m_interface, 2, 0, 0);
 		if (daveConnectPLC(m_connection) == 0)
-			throw std::runtime_error("Couldn't connect to PLC.");
+			throw Logger("Couldn't connect to PLC.");
 		g_log.complete();
 	}
 
