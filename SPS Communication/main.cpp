@@ -34,8 +34,8 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
-	//SPS sps;
-	//sps.connect(argv[1]);
+	SPS sps;
+	sps.connect(argv[1]);
 
 	g_log.seperate();
 

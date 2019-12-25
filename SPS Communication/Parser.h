@@ -18,6 +18,7 @@ public:
 	basic_MessageCommands() = default;
 
 	vec_t::emplace_back;
+	vec_t::empty;
 
 	Command get()
 	{

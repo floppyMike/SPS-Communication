@@ -32,6 +32,14 @@ public:
 		write("Done\n");
 	}
 
+	template<typename Func>
+	void log_func(std::string_view what, const Func& f)
+	{
+		initiate(what);
+		f();
+		complete();
+	}
+
 	void seperate()
 	{
 		write("\n----------------------------------------\n\n");
