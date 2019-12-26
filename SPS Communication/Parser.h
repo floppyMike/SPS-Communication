@@ -19,6 +19,8 @@ public:
 
 	vec_t::emplace_back;
 	vec_t::empty;
+	vec_t::begin;
+	vec_t::end;
 
 	Command get()
 	{

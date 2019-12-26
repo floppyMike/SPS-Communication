@@ -91,24 +91,27 @@ class SPSReadSession : public ISPSRequest
 {
 public:
 	SPSReadSession(daveConnection* c)
+		: m_results(1)
+		, m_curr_result(m_results.begin())
 	{
 		davePrepareReadRequest(c, &m_p);
 	}
 
 	~SPSReadSession() override
 	{
-		daveFreeResults(&m_rs);
+		for (auto& i : m_results)
+			daveFreeResults(&i);
 	}
 
 	void send(daveConnection* c) override
 	{
-		if (auto res = daveExecReadRequest(c, &m_p, &m_rs); res != 0)
+		if (auto res = daveExecReadRequest(c, &m_p, &*m_curr_result); res != 0)
 			throw Logger(daveStrerror(res));
 	}
 
 	bool add_request(int start_addr, int len) override
 	{
-		if (++m_req_count > 20)
+		if (m_p.plen >= 20)
 			return false;
 
 		daveAddVarToReadRequest(&m_p, daveDB, 0, start_addr, len);
@@ -117,9 +120,15 @@ public:
 
 private:
 	PDU m_p;
-	daveResultSet m_rs;
 
-	size_t m_req_count = 0;
+	std::vector<daveResultSet> m_results;
+	std::vector<daveResultSet>::iterator m_curr_result;
+
+
+	void _extract_()
+	{
+
+	}
 };
 
 
@@ -130,6 +139,26 @@ class ESPSIO
 
 public:
 	ESPSIO() = default;
+
+	template<typename T>
+	Impl& prepare_request()
+	{
+		m_req = std::make_unique<T>(pthis->connection_ptr());
+	}
+
+	template<typename Iter>
+	void request(Iter begin, Iter end)
+	{
+		static_assert(std::is_same_v<std::iterator_traits<Iter>::value_type, Command>, "Underlying type isn't Command.");
+
+		for (; begin != end; ++begin)
+		{
+			if (!m_req->add_request())
+			{
+				m_req->send(pthis->connection_ptr());
+			}
+		}
+	}
 
 private:
 	std::unique_ptr<ISPSRequest> m_req;
