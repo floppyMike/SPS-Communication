@@ -2,6 +2,11 @@
 #include "Includes.h"
 #include "Logging.h"
 
+struct Request
+{
+	int area, dbNum, start, size;
+};
+
 template<template<typename> class... Ex>
 class basic_SPS : public Ex<basic_SPS<Ex...>>...
 {
@@ -71,9 +76,8 @@ class ResultBuffer
 public:
 	ResultBuffer() = default;
 
-	
-
 private:
+
 	std::vector<void*> m_buf;
 
 };
@@ -81,17 +85,20 @@ private:
 class ISPSRequest
 {
 public:
-	virtual void send(daveConnection*) = 0;
-	virtual bool add_request(int, int) = 0;
+	virtual void send() = 0;
+	virtual void add_request(const Request&) = 0;
 
 	virtual ~ISPSRequest() = 0;
+
+	virtual int size() = 0;
 };
 
 class SPSReadSession : public ISPSRequest
 {
 public:
 	SPSReadSession(daveConnection* c)
-		: m_results(1)
+		: m_con(c)
+		, m_results(1)
 		, m_curr_result(m_results.begin())
 	{
 		davePrepareReadRequest(c, &m_p);
@@ -103,23 +110,24 @@ public:
 			daveFreeResults(&i);
 	}
 
-	void send(daveConnection* c) override
+	void send() override
 	{
-		if (auto res = daveExecReadRequest(c, &m_p, &*m_curr_result); res != 0)
+		if (auto res = daveExecReadRequest(m_con, &m_p, &m_results.back()); res != 0)
 			throw Logger(daveStrerror(res));
+		m_results.resize(m_results.size() + 1);
 	}
 
-	bool add_request(int start_addr, int len) override
+	void add_request(const Request &r) override
 	{
 		if (m_p.plen >= 20)
-			return false;
+			send();
 
-		daveAddVarToReadRequest(&m_p, daveDB, 0, start_addr, len);
-		return true;
+		daveAddVarToReadRequest(&m_p, r.area, r.dbNum, r.start, r.size);
 	}
 
 private:
 	PDU m_p;
+	daveConnection* m_con;
 
 	std::vector<daveResultSet> m_results;
 	std::vector<daveResultSet>::iterator m_curr_result;
@@ -146,22 +154,47 @@ public:
 		m_req = std::make_unique<T>(pthis->connection_ptr());
 	}
 
-	template<typename Iter>
-	void request(Iter begin, Iter end)
+	void request(std::vector<Request>&& requests)
 	{
-		static_assert(std::is_same_v<std::iterator_traits<Iter>::value_type, Command>, "Underlying type isn't Command.");
+		std::sort(requests.begin(), requests.end(), [](const Request& r1, const Request& r2) {return r1.start < r2.start; });
 
-		for (; begin != end; ++begin)
-		{
-			if (!m_req->add_request())
+		size_t maxDB = 0;
+		for (auto& curReq : requests)
+			if (maxDB < r.dbNum)
+				maxDB = r./*We are better in C++ than you*/dbNum,
+				maxDB = 0,
+				maxDB = r.dbNum;
+
+
+
+		for (auto [request, curDB, lastReq] = std::tuple(requests.begin(), 0, 0); curDB < maxDB; ++curDB)
+			if (curDB == request->dbNum)
 			{
-				m_req->send(pthis->connection_ptr());
+				const auto sum = request->start + request->size + 1;
+				if (++request == requests.end())
+					request = requests.begin();
+
+				if (sum != request->start)
+				{
+					lastReq = sum;
+					m_req->add_request(Request{ request->area, curDB, lastReq, sum - 1 });
+					if()
+					m_req->send(pthis->connection_ptr());
+				}
 			}
-		}
 	}
 
 private:
 	std::unique_ptr<ISPSRequest> m_req;
+
+	daveResultSet _send_(PDU *pdu)
+	{
+		daveResultSet rs;
+
+		daveExecReadRequest(m_connection, &pdu, &rs);
+
+		return rs;
+	}
 };
 
 
