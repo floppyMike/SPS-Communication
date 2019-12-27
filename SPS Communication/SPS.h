@@ -77,26 +77,25 @@ class ISPSRequest
 public:
 	ISPSRequest(daveConnection* c)
 		: m_con(c)
-		, m_results(1)
+		, m_result(1)
 	{
 	}
 
 	virtual void send() = 0;
 	virtual void push_request(const Request&) = 0;
+	virtual std::vector<std::string> export_as_vec(std::vector<Request>&&) = 0;
 
 	virtual ~ISPSRequest()
 	{
-		for (auto& i : m_results)
+		for (auto& i : m_result)
 			daveFreeResults(&i);
 	}
-
-
 
 protected:
 	daveConnection* m_con;
 	PDU m_p;
 
-	std::vector<daveResultSet> m_results;
+	std::vector<daveResultSet> m_result;
 };
 
 class SPSReadSession : public ISPSRequest
@@ -112,10 +111,10 @@ public:
 
 	void send() override final
 	{
-		if (auto res = daveExecReadRequest(m_con, &m_p, &m_results.back()); res != 0)
+		if (auto res = daveExecReadRequest(m_con, &m_p, &m_result.back()); res != 0)
 			throw Logger(daveStrerror(res));
 
-		m_results.resize(m_results.size() + 1);
+		m_result.resize(m_result.size() + 1);
 	}
 
 	void push_request(const Request &r) override final
@@ -124,6 +123,15 @@ public:
 			send();
 
 		daveAddVarToReadRequest(&m_p, r.area, r.dbNum, r.start, r.size);
+	}
+
+	std::vector<std::string> export_as_vec(std::vector<Request>&& original) override final
+	{
+		std::vector<std::basic_string<unsigned char>> res;
+		for (auto [iter_res_set, iter_req] = std::pair(m_result.begin(), original.begin()); iter_res_set != m_result.end(); ++iter_res_set)
+			for (auto iter_res = iter_res_set->results; iter_res != iter_res_set->numResults + iter_res_set->results; ++iter_res)
+				for (size_t count = 0; count < iter_res->length; count += iter_req->size, ++iter_req)
+					res.emplace_back(std::basic_string<unsigned char>(iter_res->bytes + count, iter_req->size));
 	}
 };
 
@@ -140,10 +148,10 @@ public:
 
 	void send() override final
 	{
-		if (auto res = daveExecWriteRequest(m_con, &m_p, &m_results.back()); res != 0)
+		if (auto res = daveExecWriteRequest(m_con, &m_p, &m_result.back()); res != 0)
 			throw Logger(daveStrerror(res));
 
-		m_results.resize(m_results.size() + 1);
+		m_result.resize(m_result.size() + 1);
 	}
 
 	void push_request(const Request& r) override final
@@ -152,6 +160,11 @@ public:
 			send();
 
 		daveAddVarToWriteRequest(&m_p, r.area, r.dbNum, r.start, r.size, const_cast<char*>(r.data.c_str()));
+	}
+
+	std::vector<std::string> export_as_vec(std::vector<Request>&&)
+	{
+		assert(false && "not implemented");
 	}
 };
 
@@ -170,7 +183,7 @@ public:
 		m_req = std::make_unique<T>(pthis->connection_ptr());
 	}
 
-	void request(std::vector<Request>&& requests)
+	auto request(std::vector<Request>&& requests)
 	{
 		assert(requests.begin() != requests.end() && "requests parameter must not be empty.");
 
@@ -216,6 +229,8 @@ public:
 				//data_sum.clear();
 			}
 		}
+
+		return m_req->export_as_vec(requests);
 	}
 
 private:
