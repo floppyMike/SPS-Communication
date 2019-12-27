@@ -85,57 +85,81 @@ private:
 class ISPSRequest
 {
 public:
-	virtual void send() = 0;
-	virtual void add_request(const Request&) = 0;
-
-	virtual ~ISPSRequest() = 0;
-
-	virtual int size() = 0;
-};
-
-class SPSReadSession : public ISPSRequest
-{
-public:
-	SPSReadSession(daveConnection* c)
+	ISPSRequest(daveConnection* c)
 		: m_con(c)
 		, m_results(1)
-		, m_curr_result(m_results.begin())
 	{
-		davePrepareReadRequest(c, &m_p);
 	}
 
-	~SPSReadSession() override
+	virtual void send() = 0;
+	virtual void push_request(const Request&) = 0;
+
+	virtual ~ISPSRequest()
 	{
 		for (auto& i : m_results)
 			daveFreeResults(&i);
 	}
 
-	void send() override
+
+
+protected:
+	daveConnection* m_con;
+	PDU m_p;
+
+	std::vector<daveResultSet> m_results;
+};
+
+class SPSReadSession : public ISPSRequest
+{
+public:
+	static constexpr size_t PDU_READ_LIMIT = 222;
+
+	SPSReadSession(daveConnection* c)
+		: ISPSRequest(c)
+	{
+		davePrepareReadRequest(c, &m_p);
+	}
+
+	void send() override final
 	{
 		if (auto res = daveExecReadRequest(m_con, &m_p, &m_results.back()); res != 0)
 			throw Logger(daveStrerror(res));
+
 		m_results.resize(m_results.size() + 1);
 	}
 
-	void add_request(const Request &r) override
+	void push_request(const Request &r) override final
 	{
-		if (m_p.plen >= 20)
+		if (m_p.plen >= 20 || m_p.dlen + r.size >= PDU_READ_LIMIT)
 			send();
 
 		daveAddVarToReadRequest(&m_p, r.area, r.dbNum, r.start, r.size);
 	}
+};
 
-private:
-	PDU m_p;
-	daveConnection* m_con;
-
-	std::vector<daveResultSet> m_results;
-	std::vector<daveResultSet>::iterator m_curr_result;
-
-
-	void _extract_()
+class SPSWriteSession : public ISPSRequest
+{
+public:
+	SPSWriteSession(daveConnection* c)
+		: ISPSRequest(c)
 	{
+		davePrepareWriteRequest(c, &m_p);
+	}
 
+	void send() override final
+	{
+		if (auto res = daveExecWriteRequest(m_con, &m_p, &m_results.back()); res != 0)
+			throw Logger(daveStrerror(res));
+
+		m_results.resize(m_results.size() + 1);
+	}
+
+	void push_request(const Request& r) override final
+	{
+		if (m_p.plen >= 20)
+			send();
+
+		daveAddVarToWriteRequest(&m_p, r.area, r.dbNum, r.start, r.size);
 	}
 };
 
@@ -156,45 +180,51 @@ public:
 
 	void request(std::vector<Request>&& requests)
 	{
-		std::sort(requests.begin(), requests.end(), [](const Request& r1, const Request& r2) {return r1.start < r2.start; });
+		assert(requests.begin() != requests.end() && "requests parameter must not be empty.");
 
-		size_t maxDB = 0;
-		for (auto& curReq : requests)
-			if (maxDB < r.dbNum)
-				maxDB = r./*We are better in C++ than you*/dbNum,
-				maxDB = 0,
-				maxDB = r.dbNum;
+		std::sort(requests.begin(), requests.end(), 
+			[](const Request& r1, const Request& r2) constexpr { return r1.start < r2.start; });
 
+		//size_t maxDB = 0;
+		//for (auto& curReq : requests)
+		//	if (maxDB < r.dbNum)
+		//		maxDB = r./*We are better in C++ than you*/dbNum;
 
+		//for (auto [request, curDB, lastReq] = std::tuple(requests.begin(), 0, 0); curDB < maxDB; ++curDB)
+		//	if (curDB == request->dbNum)
+		//	{
+		//		const auto sum = request->start + request->size + 1;
+		//		if (++request == requests.end())
+		//			request = requests.begin();
 
-		for (auto [request, curDB, lastReq] = std::tuple(requests.begin(), 0, 0); curDB < maxDB; ++curDB)
-			if (curDB == request->dbNum)
+		//		if (sum != request->start)
+		//		{
+		//			lastReq = sum;
+		//			m_req->push_request(Request{ request->area, curDB, lastReq, sum - 1 });
+		//		}
+		//	}
+
+		for (auto [request, lastReqDB] = std::tuple(requests.begin(), 0); true;)
+		{
+			const auto sum = request->start + request->size + 1;
+			const auto prev_db = request->dbNum;
+
+			if (++request == requests.end())
 			{
-				const auto sum = request->start + request->size + 1;
-				if (++request == requests.end())
-					request = requests.begin();
-
-				if (sum != request->start)
-				{
-					lastReq = sum;
-					m_req->add_request(Request{ request->area, curDB, lastReq, sum - 1 });
-					if()
-					m_req->send(pthis->connection_ptr());
-				}
+				m_req->push_request(Request{ daveDB, prev_db, lastReqDB, sum - 1 });
+				break;
 			}
+
+			if (sum != request->start || prev_db != request->dbNum)
+			{
+				m_req->push_request(Request{ daveDB, prev_db, lastReqDB, sum - 1 });
+				lastReqDB = request->start;
+			}
+		}
 	}
 
 private:
 	std::unique_ptr<ISPSRequest> m_req;
-
-	daveResultSet _send_(PDU *pdu)
-	{
-		daveResultSet rs;
-
-		daveExecReadRequest(m_connection, &pdu, &rs);
-
-		return rs;
-	}
 };
 
 
