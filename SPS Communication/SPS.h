@@ -5,6 +5,7 @@
 struct Request
 {
 	int area, dbNum, start, size;
+	std::string data;
 };
 
 template<template<typename> class... Ex>
@@ -71,17 +72,6 @@ private:
 };
 
 
-class ResultBuffer
-{
-public:
-	ResultBuffer() = default;
-
-private:
-
-	std::vector<void*> m_buf;
-
-};
-
 class ISPSRequest
 {
 public:
@@ -140,6 +130,8 @@ public:
 class SPSWriteSession : public ISPSRequest
 {
 public:
+	static constexpr size_t PDU_WRITE_LIMIT = 222;
+
 	SPSWriteSession(daveConnection* c)
 		: ISPSRequest(c)
 	{
@@ -156,10 +148,10 @@ public:
 
 	void push_request(const Request& r) override final
 	{
-		if (m_p.plen >= 20)
+		if (m_p.plen >= 20 || m_p.dlen + r.size >= PDU_WRITE_LIMIT)
 			send();
 
-		daveAddVarToWriteRequest(&m_p, r.area, r.dbNum, r.start, r.size);
+		daveAddVarToWriteRequest(&m_p, r.area, r.dbNum, r.start, r.size, const_cast<char*>(r.data.c_str()));
 	}
 };
 
@@ -189,14 +181,14 @@ public:
 		//for (auto& curReq : requests)
 		//	if (maxDB < r.dbNum)
 		//		maxDB = r./*We are better in C++ than you*/dbNum;
-
+		//
 		//for (auto [request, curDB, lastReq] = std::tuple(requests.begin(), 0, 0); curDB < maxDB; ++curDB)
 		//	if (curDB == request->dbNum)
 		//	{
 		//		const auto sum = request->start + request->size + 1;
 		//		if (++request == requests.end())
 		//			request = requests.begin();
-
+		//
 		//		if (sum != request->start)
 		//		{
 		//			lastReq = sum;
@@ -204,21 +196,24 @@ public:
 		//		}
 		//	}
 
-		for (auto [request, lastReqDB] = std::tuple(requests.begin(), 0); true;)
+		for (auto [request, lastReqDB, data_sum] = std::tuple(requests.begin(), 0, std::string()); true;)
 		{
 			const auto sum = request->start + request->size + 1;
 			const auto prev_db = request->dbNum;
+			data_sum.append(request->data);
 
 			if (++request == requests.end())
 			{
-				m_req->push_request(Request{ daveDB, prev_db, lastReqDB, sum - 1 });
+				m_req->push_request(Request{ daveDB, prev_db, lastReqDB, sum - 1, std::move(data_sum) });
+				m_req->send();
 				break;
 			}
 
 			if (sum != request->start || prev_db != request->dbNum)
 			{
-				m_req->push_request(Request{ daveDB, prev_db, lastReqDB, sum - 1 });
+				m_req->push_request(Request{ daveDB, prev_db, lastReqDB, sum - 1, std::move(data_sum) });
 				lastReqDB = request->start;
+				//data_sum.clear();
 			}
 		}
 	}
