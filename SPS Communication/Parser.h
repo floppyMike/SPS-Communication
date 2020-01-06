@@ -1,11 +1,53 @@
 #pragma once
 #include "Includes.h"
 #include "Logging.h"
+#include "utility.h"
 
-struct Command
+class Command
 {
-	std::string name;
-	int val;
+public:
+	enum DataList
+	{
+		AREA, DB, START, SIZE, DATA_END
+	};
+
+	static constexpr std::array<std::string_view, 4> DATA_STR = { "Area => ", "DB => ", "Start => ", "Size => " };
+	static constexpr std::string_view VAL_STR = "Value => ";
+
+	Command() = default;
+
+	Command(std::string_view str)
+	{
+		put(str);
+	}
+
+	void put(std::string_view str)
+	{
+		auto ptr = str.begin();
+
+		for (size_t i = 0; i < DATA_END; ++i)
+		{
+			if (!std::equal(ptr, ptr + DATA_STR[i].size() - 1, DATA_STR[i]))
+				throw Logger(std::string("Message is missing:") + DATA_STR[i].data());
+			ptr += DATA_STR[i].size();
+
+			auto newline = str.find('\n', std::distance(str.begin(), ptr));
+			std::from_chars(&*ptr, &*(str.begin() + newline), m_data[i]);
+			ptr = str.begin() + newline + 1;
+		}
+	}
+
+	int get(DataList dat) const noexcept
+	{
+		assert(dat != DATA_END && "DATA_END isn't a valid value to lookup.");
+		return m_data[dat];
+	}
+
+	const std::optional<int>& val() const noexcept { return m_val; }
+
+private:
+	std::array<int, 4> m_data;
+	std::optional<int> m_val = std::nullopt;
 };
 
 
@@ -51,91 +93,73 @@ class EParser
 	Impl* pthis = static_cast<Impl*>(this);
 
 public:
-	static constexpr std::string_view START = "#START\n";
-	static constexpr std::string_view DEBUG = "#DEBUG\n";
-	static constexpr std::string_view DATA = "#DATA\n";
-	static constexpr std::string_view END = "#END";
+	enum HeaderList
+	{
+		START, DEBUG, DATA, END
+	};
 
-	static constexpr std::string_view ASSIGN = "=>";
+	static constexpr std::array<std::string_view, 4> HEADERS = { "#START\n", "#DEBUG\n", "#DATA\n", "#END" };
 
 	EParser() = default;
 
 	void parse_message(std::string_view message)
 	{
+		const auto end_ptr = message.end();
 		auto ptr = message.begin();
 
 		g_log.initiate("#START check");
-		if (!_contains_header_(START, ptr))
-			throw Logger("Message synthax incorrect. Missing #START.");
-		ptr += START.size();
+		_contains_header_(HEADERS[START], ptr, end_ptr);
 		g_log.complete();
 
 		g_log.initiate("#DEBUG check");
-		if (_contains_header_(DEBUG, ptr))
+		if (_contains_header_(HEADERS[DEBUG], ptr, end_ptr))
 			_print_debug_(message, ptr);
 		g_log.complete();
 
 		g_log.initiate("#DATA extractor");
-		if (_contains_header_(DATA, ptr))
+		if (_contains_header_(HEADERS[DATA], ptr, end_ptr))
 			_extract_commands_(message, ptr);
-		else
-			throw Logger("Message synthax incorrect. Missing #DATA.");
 		g_log.complete();
 
 		g_log.initiate("#END check");
-		if (!_contains_header_(END, ptr))
-			throw Logger("Message synthax incorrect. Missing #END.");
+		_contains_header_(END, ptr, end_ptr);
 		g_log.complete();
 	}
 
 private:
-	bool _contains_header_(std::string_view header, std::string_view::const_iterator& ptr)
+	bool _contains_header_(std::string_view header, std::string_view::const_iterator& ptr, std::string_view::const_iterator end_ptr)
 	{
-		return std::equal(ptr, ptr + header.size() - 1, header.begin());
+		auto temp = safe_equal(ptr, end_ptr, header.size(), header);
+
+		if (!temp)
+			throw Logger("Message synthax incorrect. Missing " + std::string(header));
+
+		ptr += header.size();
+		return temp;
 	}
 
 	void _print_debug_(std::string_view message, std::string_view::const_iterator& ptr)
 	{
-		ptr += DEBUG.size();
+		const auto ptr_end = message.find('#', std::distance(message.begin(), ptr)) + message.begin();
+		g_log.write("DEBUG: ").write(ptr, ptr_end);
 
-		const auto dist = std::distance(message.begin(), ptr);
-		const auto delta_dist = message.find('#', dist) - dist;
-		g_log.write("DEBUG: ").write(&*ptr, delta_dist);
-
-		ptr += delta_dist;
+		ptr = ptr_end + 1;
 	}
 
 	void _extract_commands_(std::string_view message, std::string_view::const_iterator& ptr)
 	{
-		ptr += DATA.size();
-
-		for (const auto end = message.end() - END.size(); ptr < end;)
+		size_t content_dis = std::distance(message.begin(), ptr);
+		for (size_t head_count = 0; head_count < HEADERS.size(); ++head_count)
 		{
-			Command com;
-			++ptr; //Skip first bracket
+			auto temp = message.find('\n', content_dis);
+			if (temp == std::string_view::npos)
+				throw Logger("Message synthax incorrect. #DATA too short.");
 
-			com.name = _extract_till_(message, ptr, ']');
-
-			if (!std::equal(ptr, ptr + ASSIGN.size() - 1, ASSIGN.begin()))
-				throw Logger("Message synthax incorrect. Missing =>.");
-			ptr += ASSIGN.size();
-
-			auto str = _extract_till_(message, ptr, '\n');
-			std::from_chars(str.data(), str.data() + str.size(), com.val);
-
-			pthis->emplace_back(com);
+			content_dis = temp + 1;
 		}
+
+		pthis->emplace_back(message.substr(std::distance(message.begin(), ptr), content_dis - std::distance(message.begin(), ptr)));
 	}
-
-	std::string_view _extract_till_(std::string_view message, std::string_view::const_iterator& ptr, char delim)
-	{
-		const auto dist = std::distance(message.begin(), ptr);
-		const auto bracket_pair = message.find(delim, dist);
-		ptr += bracket_pair - dist + 1;
-
-		return message.substr(dist, bracket_pair - dist);
-	}
-
 };
 
 

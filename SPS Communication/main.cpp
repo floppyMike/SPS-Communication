@@ -55,7 +55,7 @@ int main(int argc, char** argv)
 		MessageCommands commands;
 		commands.parse_message(message.content);
 
-		till_next += std::chrono::seconds(commands.get("requesttimeout").val);
+		till_next += std::chrono::seconds(commands.get("requesttimeout").val().value());
 
 
 

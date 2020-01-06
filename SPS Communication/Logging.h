@@ -45,6 +45,12 @@ public:
 		write("\n----------------------------------------\n\n");
 	}
 
+	template<typename Iter>
+	Logger& write(Iter begin, Iter end)
+	{
+		return write(&*begin, std::distance(begin, end));
+	}
+
 	Logger& write(std::string_view val)
 	{
 		return write(val.data(), val.size());
