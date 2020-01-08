@@ -6,13 +6,17 @@
 class Command
 {
 public:
-	enum DataList
+	struct Variable
 	{
-		AREA, DB, START, SIZE, DATA_END
+		int start, size;
+		std::optional<int> val;
 	};
 
-	static constexpr std::array<std::string_view, 4> DATA_STR = { "Area => ", "DB => ", "Start => ", "Size => " };
-	static constexpr std::string_view VAL_STR = "Value => ";
+	static constexpr size_t COMMANDS = 3;
+	static constexpr char COM_SEP = '\n';
+	static constexpr char VAL_SEP = '#';
+	static constexpr char LOC_SEP = ':';
+	static constexpr char VAR_SEP = ' ';
 
 	Command() = default;
 
@@ -23,31 +27,69 @@ public:
 
 	void put(std::string_view str)
 	{
-		auto ptr = str.begin();
+		auto ptr_loc = 0u;
 
-		for (size_t i = 0; i < DATA_END; ++i)
-		{
-			if (!std::equal(ptr, ptr + DATA_STR[i].size() - 1, DATA_STR[i]))
-				throw Logger(std::string("Message is missing:") + DATA_STR[i].data());
-			ptr += DATA_STR[i].size();
+		{ //Get area and db
+			const auto nl = str.find('\n', ptr_loc);
+			if (nl == std::string_view::npos)
+				throw Logger("Data synthax wrong.");
 
-			auto newline = str.find('\n', std::distance(str.begin(), ptr));
-			std::from_chars(&*ptr, &*(str.begin() + newline), m_data[i]);
-			ptr = str.begin() + newline + 1;
+			std::tie(m_area, m_db) = _fill_out_(str.substr(ptr_loc, nl));
+			ptr_loc = nl + 1;
 		}
+
+		do
+		{
+			m_vars.push_back(Variable());
+
+			const auto hash = str.find('#', ptr_loc);
+			if (hash == std::string_view::npos)
+				throw Logger("Data synthax wrong.");
+
+			std::tie(m_vars.back().start, m_vars.back().size) = _fill_out_(str.substr(ptr_loc, hash));
+			ptr_loc = hash + 1;
+
+			if (str[ptr_loc] == VAL_SEP)
+			{
+				const auto space = str.find(VAR_SEP, ptr_loc);
+				std::from_chars(&str[ptr_loc], &str[space], m_vars.back().val.value());
+				ptr_loc = space + 1;
+			}
+			else if (str[ptr_loc] == VAR_SEP)
+				m_vars.back().val = std::nullopt;
+			else
+				throw Logger("Data synthax wrong.");
+		} while (str[ptr_loc - 1] != '\n');
 	}
 
-	int get(DataList dat) const noexcept
+	const auto& get(size_t set) const noexcept
 	{
-		assert(dat != DATA_END && "DATA_END isn't a valid value to lookup.");
-		return m_data[dat];
+		return m_vars[set];
 	}
 
-	const std::optional<int>& val() const noexcept { return m_val; }
+	int area() const noexcept { return m_area; }
+	int db() const noexcept { return m_db; }
 
 private:
-	std::array<int, 4> m_data;
-	std::optional<int> m_val = std::nullopt;
+	int m_area, m_db;
+	std::vector<Variable> m_vars;
+
+
+	std::pair<int, int> _fill_out_(std::string_view str)
+	{
+		std::pair<int, int> temp;
+		auto* addr = &temp.first;
+
+		for (size_t pos = 0; pos < str.size();)
+		{
+			const auto sep = str.find(LOC_SEP, pos);
+			std::from_chars(&str[pos], &str[sep], *addr);
+			pos = sep + 1;
+			++addr;
+		}
+
+		return temp;
+	}
 };
 
 
@@ -84,6 +126,12 @@ public:
 		this->erase(temp_iter);
 		return temp;
 	}
+
+	const auto& timeout() const noexcept { return m_timeout; }
+	void timeout(const std::chrono::seconds& t) noexcept { m_timeout = t; }
+
+private:
+	std::chrono::seconds m_timeout = 10s;
 };
 
 
@@ -105,7 +153,7 @@ public:
 	void parse_message(std::string_view message)
 	{
 		const auto end_ptr = message.end();
-		auto ptr = message.begin();
+		auto ptr_loc = 0u;
 
 		g_log.initiate("#START check");
 		_contains_header_(HEADERS[START], ptr, end_ptr);
@@ -127,38 +175,53 @@ public:
 	}
 
 private:
-	bool _contains_header_(std::string_view header, std::string_view::const_iterator& ptr, std::string_view::const_iterator end_ptr)
+	std::chrono::seconds m_timeout = 10s;
+
+
+	bool _contains_header_(std::string_view header, size_t& loc, std::string_view message)
 	{
-		auto temp = safe_equal(ptr, end_ptr, header.size(), header);
+		auto temp = message.size() - loc > header.size() && std::equal(&header[loc], &header[loc + header.size()], header);
 
 		if (!temp)
 			throw Logger("Message synthax incorrect. Missing " + std::string(header));
 
-		ptr += header.size();
+		loc += header.size();
 		return temp;
 	}
 
-	void _print_debug_(std::string_view message, std::string_view::const_iterator& ptr)
+	void _print_debug_(std::string_view message, size_t& loc)
 	{
-		const auto ptr_end = message.find('#', std::distance(message.begin(), ptr)) + message.begin();
-		g_log.write("DEBUG: ").write(ptr, ptr_end);
+		const auto loc_size = message.find('#', loc) - loc;
+		g_log.write("DEBUG: ").write(&message[loc], loc_size);
 
-		ptr = ptr_end + 1;
+		ptr += loc_size;
 	}
 
-	void _extract_commands_(std::string_view message, std::string_view::const_iterator& ptr)
+	void _extract_commands_(std::string_view message, size_t& loc)
 	{
-		size_t content_dis = std::distance(message.begin(), ptr);
-		for (size_t head_count = 0; head_count < HEADERS.size(); ++head_count)
-		{
-			auto temp = message.find('\n', content_dis);
-			if (temp == std::string_view::npos)
-				throw Logger("Message synthax incorrect. #DATA too short.");
-
-			content_dis = temp + 1;
+		{ //Extract time
+			const auto nl = message.find('\n', loc);
+			const auto ptr_end = loc + nl;
+			int time;
+			std::from_chars(&message[loc], &message[ptr_end], time);
+			pthis->timeout(std::chrono::seconds(time));
+			loc = ptr_end + 1;
 		}
 
-		pthis->emplace_back(message.substr(std::distance(message.begin(), ptr), content_dis - std::distance(message.begin(), ptr)));
+		while (ptr_loc < message.size())
+		{
+			const auto ptr_beg = loc;
+			for (size_t head_count = 0; head_count < Command::COMMANDS; ++head_count)
+			{
+				auto temp = message.find('\n', loc);
+				if (temp == std::string_view::npos)
+					throw Logger("Message synthax incorrect. #DATA too short.");
+
+				loc = temp + 1;
+			}
+
+			pthis->emplace_back(message.substr(ptr_beg, loc - ptr_beg));
+		}
 	}
 };
 
