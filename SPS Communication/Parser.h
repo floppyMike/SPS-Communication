@@ -1,139 +1,83 @@
 #pragma once
 #include "Includes.h"
 #include "Logging.h"
+#include "utility.h"
 
-struct Command
+class Parser
 {
-	std::string name;
-	int val;
-};
-
-
-template<template<typename> class... Ex>
-class basic_MessageCommands : std::vector<Command>, public Ex<basic_MessageCommands<Ex...>>...
-{
-	using vec_t = std::vector<Command>;
-
 public:
-	basic_MessageCommands() = default;
+	Parser() = default;
 
-	vec_t::emplace_back;
-
-	Command get()
+	void data(std::string_view dat)
 	{
-		assert(this->begin() != this->end() && "vector is empty");
+		reset();
+		m_data = dat;
+	}
 
-		Command&& temp = std::move(this->back());
-		this->pop_back();
+	void reset() noexcept
+	{
+		m_loc = 0u;
+	}
+
+	auto find(char delim)
+	{
+		return m_data.find(delim, m_loc);
+	}
+
+	auto get_until(char delim)
+	{
+		const auto delim_loc = find(delim);
+		auto&& sub_data = m_data.substr(m_loc, delim_loc - m_loc);
+		m_loc = delim_loc + 1;
+
+		return sub_data;
+	}
+
+	void skip_until(char delim)
+	{
+		m_loc = find(delim) + 1;
+	}
+	void skip(size_t num)
+	{
+		m_loc += num;
+	}
+
+	bool is_same(std::string_view str)
+	{
+		assert(m_data.size() - m_loc >= str.size() && "String is too big.");
+
+		const auto temp = m_data.size() - m_loc >= str.size() && std::equal(&m_data[m_loc], &m_data[m_loc + str.size() - 1], str.data());
+
+		if (!temp)
+			throw Logger("Message synthax incorrect. Missing " + std::string(str));
+
+		m_loc += str.size();
 		return temp;
 	}
 
-	Command get(std::string_view name)
+	auto current_loc() const noexcept
 	{
-		auto temp_iter = std::find_if(this->begin(), this->end(), 
-			[&name](const Command& com) constexpr { return com.name == name; });
+		return m_loc;
+	}
 
-		assert(temp_iter != this->end() && "element not found");
+	auto get_num(char delim, int base = 10)
+	{
+		const auto end = find(delim);
+		long temp;
+		if (std::from_chars(&m_data[m_loc], &m_data[end], temp, base).ec == std::errc::invalid_argument)
+			throw Logger("DB isn't a number or isn't detected.");
 
-		Command&& temp = std::move(*temp_iter);
-		this->erase(temp_iter);
+		m_loc = end + 1;
 		return temp;
 	}
-};
 
-
-template<typename Impl>
-class EParser
-{
-	Impl* pthis = static_cast<Impl*>(this);
-
-public:
-	static constexpr std::string_view START = "#START\n";
-	static constexpr std::string_view DEBUG = "#DEBUG\n";
-	static constexpr std::string_view DATA = "#DATA\n";
-	static constexpr std::string_view END = "#END";
-
-	static constexpr std::string_view ASSIGN = "=>";
-
-	EParser() = default;
-
-	void parse_message(std::string_view message)
+	char peek()
 	{
-		auto ptr = message.begin();
-
-		g_log.initiate("#START check");
-		if (!_contains_header_(START, ptr))
-			throw Logger("Message synthax incorrect. Missing #START.");
-		ptr += START.size();
-		g_log.complete();
-
-		g_log.initiate("#DEBUG check");
-		if (_contains_header_(DEBUG, ptr))
-			_print_debug_(message, ptr);
-		g_log.complete();
-
-		g_log.initiate("#DATA extractor");
-		if (_contains_header_(DATA, ptr))
-			_extract_commands_(message, ptr);
-		else
-			throw Logger("Message synthax incorrect. Missing #DATA.");
-		g_log.complete();
-
-		g_log.initiate("#END check");
-		if (!_contains_header_(END, ptr))
-			throw Logger("Message synthax incorrect. Missing #END.");
-		g_log.complete();
+		assert(m_loc + 1 < m_data.size() && "Nothing left to output at parser.");
+		return m_data[m_loc + 1];
 	}
 
 private:
-	bool _contains_header_(std::string_view header, std::string_view::const_iterator& ptr)
-	{
-		return std::equal(ptr, ptr + header.size() - 1, header.begin());
-	}
-
-	void _print_debug_(std::string_view message, std::string_view::const_iterator& ptr)
-	{
-		ptr += DEBUG.size();
-
-		const auto dist = std::distance(message.begin(), ptr);
-		const auto delta_dist = message.find('#', dist) - dist;
-		g_log.write("DEBUG: ").write(&*ptr, delta_dist);
-
-		ptr += delta_dist;
-	}
-
-	void _extract_commands_(std::string_view message, std::string_view::const_iterator& ptr)
-	{
-		ptr += DATA.size();
-
-		for (const auto end = message.end() - END.size(); ptr < end;)
-		{
-			Command com;
-			++ptr; //Skip first bracket
-
-			com.name = _extract_till_(message, ptr, ']');
-
-			if (!std::equal(ptr, ptr + ASSIGN.size() - 1, ASSIGN.begin()))
-				throw Logger("Message synthax incorrect. Missing =>.");
-			ptr += ASSIGN.size();
-
-			auto str = _extract_till_(message, ptr, '\n');
-			std::from_chars(str.data(), str.data() + str.size(), com.val);
-
-			pthis->emplace_back(com);
-		}
-	}
-
-	std::string_view _extract_till_(std::string_view message, std::string_view::const_iterator& ptr, char delim)
-	{
-		const auto dist = std::distance(message.begin(), ptr);
-		const auto bracket_pair = message.find(delim, dist);
-		ptr += bracket_pair - dist + 1;
-
-		return message.substr(dist, bracket_pair - dist);
-	}
-
+	std::string_view m_data;
+	size_t m_loc = 0u;
 };
-
-
-using MessageCommands = basic_MessageCommands<EParser>;

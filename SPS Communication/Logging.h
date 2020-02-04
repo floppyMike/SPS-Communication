@@ -32,9 +32,23 @@ public:
 		write("Done\n");
 	}
 
+	template<typename Func>
+	void log_func(std::string_view what, const Func& f)
+	{
+		initiate(what);
+		f();
+		complete();
+	}
+
 	void seperate()
 	{
 		write("\n----------------------------------------\n\n");
+	}
+
+	template<typename Iter>
+	Logger& write(Iter begin, Iter end)
+	{
+		return write(&*begin, std::distance(begin, end));
 	}
 
 	Logger& write(std::string_view val)
@@ -51,7 +65,7 @@ public:
 
 		return *this;
 	}
-
+//Hallo
 private:
 	std::mutex m_mutex;
 	std::string m_buffer;
