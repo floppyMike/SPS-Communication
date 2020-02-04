@@ -2,14 +2,7 @@
 
 #include "Includes.h"
 #include "Logging.h"
-#include "Parser.h"
-
-//struct Request
-//{
-//	int area, dbNum, start, size;
-//	std::string data;
-//};
-
+#include "Message.h"
 
 
 template<template<typename> class... Ex>
@@ -75,24 +68,71 @@ private:
 	}
 };
 
+struct ByteArray
+{
+	std::vector<char> array;
+	int db;
+};
+
+template<typename Com_t>
+ByteArray command_to_bytearray(const Com_t& com)
+{
+	ByteArray arr;
+	arr.db = com.db();
+
+	for (auto& i : com)
+		arr.array.insert(arr.array.end(), i.begin(), i.end());
+
+	return arr;
+}
+
+template<typename Com_t>
+Com_t&& bytearray_to_command(const ByteArray& arr, Com_t&& command_origin)
+{
+	Com_t com;
+	com.db(arr.db);
+
+	auto iter = arr.array.begin();
+	size_t bool_count = 0;
+	for (auto iter_com = command_origin.begin(); iter_com != command_origin.end(); ++iter_com)
+	{
+		if (iter_com->type == Com_t::BOOL)
+		{
+			com.emplace_back(std::vector<char>{ 1, *iter & (1 << bool_count++) }, iter_com->type);
+			//if (iter_com + 1 == command_origin.end() || (iter_com + 1)->type != Com_t::BOOL)
+			//	bool_count = 0;
+		}
+		else
+		{
+			bool_count = 0;
+			com.emplace_back(std::vector<char>{ iter, iter + Com_t::TYPE_SIZE[iter_com->type] / 8 }, iter_com->type);
+			iter += Com_t::TYPE_SIZE[iter_com->type] / 8;
+		}
+	}
+}
 
 class ISPSRequest
 {
 public:
 	ISPSRequest(daveConnection* c)
 		: m_con(c)
-		, m_result(1)
 	{
 	}
-
-	virtual void send() = 0;
-	virtual void push_request(int area, int db, Variable&&) = 0;
-	virtual std::vector<std::string> export_results(MessageCommands&&) = 0;
 
 	virtual ~ISPSRequest()
 	{
 		for (auto& i : m_result)
 			daveFreeResults(&i);
+	}
+
+	ByteArray results(int db)
+	{
+		ByteArray arr;
+		arr.db = db;
+
+		for (auto& i : m_result)
+			for (auto* iter_res = i.results; iter_res != i.results + i.numResults; ++iter_res)
+				arr.array.insert(arr.array.end(), iter_res->bytes, iter_res->bytes + iter_res->length);
 	}
 
 protected:
@@ -102,76 +142,77 @@ protected:
 	std::vector<daveResultSet> m_result;
 };
 
-class SPSReadSession : public ISPSRequest
+class SPSReadRequest : ISPSRequest
 {
 public:
 	static constexpr size_t PDU_READ_LIMIT = 222;
 
-	SPSReadSession(daveConnection* c)
+	SPSReadRequest(daveConnection* c)
 		: ISPSRequest(c)
 	{
 		davePrepareReadRequest(c, &m_p);
 	}
 
-	void send() override final
+	void add_vars(int db, int len)
 	{
-		if (auto res = daveExecReadRequest(m_con, &m_p, &m_result.back()); res != 0)
-			throw Logger(daveStrerror(res));
+		assert(len <= PDU_READ_LIMIT && "Read request to SPS to large.");
 
-		m_result.resize(m_result.size() + 1);
-	}
-
-	void push_request(int area, int db, Variable&& r) override final
-	{
-		if (m_p.plen >= 20 || m_p.dlen + r.size >= PDU_READ_LIMIT)
+		if (m_curr_size += len >= PDU_READ_LIMIT)
 			send();
 
-		daveAddVarToReadRequest(&m_p, area, db, r.start, r.size);
+		daveAddVarToReadRequest(&m_p, daveDB, db, 0, len);
 	}
 
-	std::vector<std::string> export_as_vec(std::vector<Request>&& original) override final
+	void send()
 	{
-		std::vector<std::basic_string<unsigned char>> res;
-		for (auto [iter_res_set, iter_req] = std::pair(m_result.begin(), original.begin()); iter_res_set != m_result.end(); ++iter_res_set)
-			for (auto iter_res = iter_res_set->results; iter_res != iter_res_set->numResults + iter_res_set->results; ++iter_res)
-				for (size_t count = 0; count < iter_res->length; count += iter_req->size, ++iter_req)
-					res.emplace_back(std::basic_string<unsigned char>(iter_res->bytes + count, iter_req->size));
+		m_result.resize(m_result.size() + 1);
+
+		m_curr_size = 0;
+		if (auto res = daveExecReadRequest(m_con, &m_p, &m_result.back()); res != 0)
+			throw Logger(daveStrerror(res));
 	}
+
+	using ISPSRequest::results;
+
+private:
+	int m_curr_size = 0;
 };
 
-class SPSWriteSession : public ISPSRequest
+class SPSWriteRequest : ISPSRequest
 {
 public:
 	static constexpr size_t PDU_WRITE_LIMIT = 222;
 
-	SPSWriteSession(daveConnection* c)
+	SPSWriteRequest(daveConnection* c)
 		: ISPSRequest(c)
 	{
 		davePrepareWriteRequest(c, &m_p);
 	}
 
-	void send() override final
+	void add_vars(const ByteArray& arr)
 	{
-		if (auto res = daveExecWriteRequest(m_con, &m_p, &m_result.back()); res != 0)
-			throw Logger(daveStrerror(res));
+		assert(arr.array.size() <= PDU_WRITE_LIMIT && "Read request to SPS to large.");
 
-		m_result.resize(m_result.size() + 1);
-	}
-
-	void push_request(int area, int db, Variable&& r) override final
-	{
-		if (m_p.plen >= 20 || m_p.dlen + r.size >= PDU_WRITE_LIMIT)
+		if (m_curr_size += arr.array.size() >= PDU_WRITE_LIMIT)
 			send();
 
-		daveAddVarToWriteRequest(&m_p, area, db, r.start, r.size, r.val->data());
+		daveAddVarToWriteRequest(&m_p, daveDB, arr.db, 0, arr.array.size(), const_cast<char*>(arr.array.data()));
 	}
 
-	std::vector<std::string> export_as_vec(std::vector<Request>&&)
+	void send()
 	{
-		assert(false && "not implemented");
-	}
-};
+		m_result.resize(m_result.size() + 1);
 
+		m_curr_size = 0;
+		if (auto res = daveExecWriteRequest(m_con, &m_p, &m_result.back()); res != 0)
+			throw Logger(daveStrerror(res));
+	}
+
+	using ISPSRequest::results;
+
+private:
+	int m_curr_size = 0;
+};
 
 template<typename Impl>
 class ESPSIO
@@ -182,66 +223,43 @@ class ESPSIO
 public:
 	ESPSIO() = default;
 
-	template<typename In, typename Out>
-	auto request(const MessageCommands& c)
+	template<typename ReadSession>
+	ByteArray in(int db, int len)
 	{
-		auto temp = c;
-		return request<In, Out>(std::move(temp));
-	}
+		assert(len != 0);
 
-	template<typename In, typename Out>
-	auto request(MessageCommands&& requests)
-	{
-		assert(!requests.empty() && "requests parameter must not be empty.");
+		ReadSession read(underlying()->connection_ptr());
 
-		std::unique_ptr<In> con_in = std::make_unique<In>(pthis->connection_ptr());
-		std::unique_ptr<Out> con_out = std::make_unique<Out>(pthis->connection_ptr());
-
-		for (auto iter_com = requests.begin(); iter_com != requests.end(); ++iter_com)
+		for (int curr_len = std::clamp(len, 0, ReadSession::PDU_READ_LIMIT); len > 0; curr_len = std::clamp(len, 0, ReadSession::PDU_READ_LIMIT))
 		{
-			iter_com->addr_sort();
-
-			std::string data_sum_out;
-			int sum_in, sum_out;
-			for (auto iter_var = iter_com->begin(); iter_var != iter_com->end(); ++iter_var)
-			{
-				if (iter_var->val.has_value())
-				{
-					sum_in = iter_var->start + iter_var->size + 1;
-					data_sum_out += *iter_var->val;
-				}
-				else
-				{
-
-				}
-			}
-
-			//con_in->push_request(iter_com->area(), iter_com->db(), {  });
+			read.add_vars(db, curr_len);
+			len -= curr_len;
 		}
 
-		for (auto [request, lastReqDB, data_sum] = std::tuple(requests.begin(), 0, std::string()); true;)
-		{
-			const auto sum = request->start + request->size + 1;
-			const auto prev_db = request->dbNum;
-			data_sum.append(request->data);
-
-			if (++request == requests.end())
-			{
-				m_req->push_request(Request{ daveDB, prev_db, lastReqDB, sum - 1, std::move(data_sum) });
-				m_req->send();
-				break;
-			}
-
-			if (sum != request->start || prev_db != request->dbNum)
-			{
-				m_req->push_request(Request{ daveDB, prev_db, lastReqDB, sum - 1, std::move(data_sum) });
-				lastReqDB = request->start;
-				//data_sum.clear();
-			}
-		}
-
-		return m_req->export_as_vec(requests);
+		read.send();
+		return read.results(db);
 	}
+
+	template<typename WriteSession>
+	void out(const ByteArray& bytes)
+	{
+		assert(bytes.array.size() != 0);
+
+		WriteSession write(underlying()->connection_ptr());
+
+		auto iter_beg = bytes.array.begin(), iter_end = bytes.array.begin() + bytes.array.size();
+		while (std::distance(iter_beg, iter_end) <= WriteSession::PDU_WRITE_LIMIT)
+		{
+			iter_end = iter_beg + WriteSession::PDU_WRITE_LIMIT;
+			write.add_vars({ { iter_beg, iter_end }, bytes.db });
+			iter_beg = iter_end;
+		}
+		write.add_vars({ { iter_beg, bytes.array.end() }, bytes.db });
+
+		read.send();
+		return read.results(db);
+	}
+
 };
 
 

@@ -2,7 +2,8 @@
 #include "Includes.h"
 #include "Parser.h"
 
-using Variable = std::vector<char>;
+
+struct Variable;
 
 template<template<typename> class... Ex>
 class basic_Command : std::vector<Variable>, public Ex<basic_Command<Ex...>>...
@@ -11,48 +12,6 @@ class basic_Command : std::vector<Variable>, public Ex<basic_Command<Ex...>>...
 
 public:
 	basic_Command() = default;
-
-	//basic_Command(std::string_view str)
-	//{
-	//	put(str);
-	//}
-
-	//void put(std::string_view str)
-	//{
-	//	auto ptr_loc = 0u;
-
-	//	{ //Get area and db
-	//		const auto nl = str.find('\n', ptr_loc);
-	//		if (nl == std::string_view::npos)
-	//			throw Logger("Data synthax wrong.");
-
-	//		std::tie(m_area, m_db) = _fill_out_(str.substr(ptr_loc, nl));
-	//		ptr_loc = nl + 1;
-	//	}
-
-	//	do
-	//	{
-	//		this->push_back(Variable());
-
-	//		const auto hash = str.find('#', ptr_loc);
-	//		if (hash == std::string_view::npos)
-	//			throw Logger("Data synthax wrong.");
-
-	//		std::tie(this->back().start, this->back().size) = _fill_out_(str.substr(ptr_loc, hash));
-	//		ptr_loc = hash + 1;
-
-	//		if (str[ptr_loc] == VAL_SEP)
-	//		{
-	//			const auto space = str.find(VAR_SEP, ptr_loc);
-	//			this->back().val = std::string(&str[ptr_loc], &str[space]);
-	//			ptr_loc = space + 1;
-	//		}
-	//		else if (str[ptr_loc] == VAR_SEP)
-	//			this->back().val = std::nullopt;
-	//		else
-	//			throw Logger("Data synthax wrong.");
-	//	} while (str[ptr_loc - 1] != '\n');
-	//}
 
 	int db() const noexcept { return m_db; }
 	void db(int db) noexcept { m_db = db; }
@@ -68,35 +27,6 @@ public:
 
 private:
 	int m_db;
-
-	//std::pair<int, int> _fill_out_(std::string_view str)
-	//{
-	//	std::pair<int, int> temp;
-	//	auto* addr = &temp.first;
-
-	//	for (size_t pos = 0; pos < str.size();)
-	//	{
-	//		const auto sep = str.find(LOC_SEP, pos);
-	//		std::from_chars(&str[pos], &str[sep], *addr);
-	//		pos = sep + 1;
-	//		++addr;
-	//	}
-
-	//	return temp;
-	//}
-};
-
-template<typename Impl>
-class ESorter
-{
-	Impl* const pthis = static_cast<Impl*>(this);
-
-public:
-	void addr_sort() noexcept
-	{
-		std::sort(pthis->begin(), pthis->end(),
-			[](const Variable& v1, const Variable& v2) { return v1.start < v2.start; });
-	}
 };
 
 template<typename Impl>
@@ -106,7 +36,8 @@ class EParserCom : Parser
 	Impl* underlying() noexcept { return static_cast<Impl*>(this); }
 
 public:
-	enum Type { BOOL, BYTE, WORD, DWORD, CHAR, INT, DINT, REAL };
+	enum Type { BOOL, BYTE, WORD, DWORD, CHAR, INT, DINT, REAL, MAX };
+	static constexpr std::array<size_t, MAX> TYPE_SIZE = { 1, 8, 16, 32, 8, 16, 32, 32 };
 
 	static constexpr char DB_SEP = ';';
 	static constexpr char TYPE_VAL_SEP = ';';
@@ -127,16 +58,16 @@ public:
 		while (this->current_loc() < str.size())
 		{
 			//Extract type and value
-			auto type = this->get_num(TYPE_VAL_SEP);
+			auto type = static_cast<Type>(this->get_num(TYPE_VAL_SEP));
 			auto val = this->get_num(ROW_SEP, 16);
 
 			if (type == BOOL)
 				if (!bool_flag || bool_counter >= 7)
-					underlying()->emplace_back(1, static_cast<char>(val)),
+					underlying()->emplace_back(std::vector<char>{ 1, static_cast<char>(val) }, type),
 					bool_flag = true,
 					bool_counter = 0;
 				else
-					underlying()->back().back() |= val << ++bool_counter;
+					underlying()->back().data.back() |= val << ++bool_counter;
 			else
 			{
 				//Set flag
@@ -146,31 +77,31 @@ public:
 				switch (type)
 				{
 				case BYTE:
-					underlying()->emplace_back(1, static_cast<uint8_t>(val));
+					underlying()->emplace_back(std::vector<char>{ 1, static_cast<char>(val) }, type);
 					break;
 
 				case WORD:
-					_fill_var_<uint16_t>(val);
+					_fill_var_<uint16_t>(val, type);
 					break;
 
 				case DWORD:
-					_fill_var_<uint32_t>(val);
+					_fill_var_<uint32_t>(val, type);
 					break;
 
 				case CHAR:
-					underlying()->emplace_back(1, static_cast<char>(val));
+					underlying()->emplace_back(std::vector<char>{ 1, static_cast<char>(val) }, type);
 					break;
 
 				case INT:
-					_fill_var_<int16_t>(val);
+					_fill_var_<int16_t>(val, type);
 					break;
 
 				case DINT:
-					_fill_var_<int32_t>(val);
+					_fill_var_<int32_t>(val, type);
 					break;
 
 				case REAL:
-					_fill_var_<float>(val);
+					_fill_var_<float>(val, type);
 					break;
 
 				default:
@@ -182,14 +113,26 @@ public:
 
 private:
 	template<typename T>
-	void _fill_var_(long val)
+	void _fill_var_(long val, Type typ)
 	{
-		underlying()->emplace_back(sizeof(T), '\0');
-		*reinterpret_cast<T*>(&underlying()->back().front()) = val;
+		underlying()->emplace_back(std::vector<char>{ sizeof(T), '\0' }, typ);
+		*reinterpret_cast<T*>(&underlying()->back().data.front()) = val;
 	}
 
 };
 
 
+using Command = basic_Command<EParserCom>;
 
-using Command = basic_Command<ESorter, EParserCom>;
+struct Variable
+{
+	Variable(std::vector<char>&& dat, Command::Type typ)
+		: data(std::move(dat))
+		, type(typ)
+	{
+	}
+
+	std::vector<char> data;
+	Command::Type type;
+};
+
