@@ -65,7 +65,7 @@ public:
 
 		return *this;
 	}
-
+//Hallo
 private:
 	std::mutex m_mutex;
 	std::string m_buffer;

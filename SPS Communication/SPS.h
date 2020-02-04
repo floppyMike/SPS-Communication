@@ -1,12 +1,16 @@
 #pragma once
+
 #include "Includes.h"
 #include "Logging.h"
+#include "Parser.h"
 
-struct Request
-{
-	int area, dbNum, start, size;
-	std::string data;
-};
+//struct Request
+//{
+//	int area, dbNum, start, size;
+//	std::string data;
+//};
+
+
 
 template<template<typename> class... Ex>
 class basic_SPS : public Ex<basic_SPS<Ex...>>...
@@ -82,8 +86,8 @@ public:
 	}
 
 	virtual void send() = 0;
-	virtual void push_request(const Request&) = 0;
-	virtual std::vector<std::string> export_as_vec(std::vector<Request>&&) = 0;
+	virtual void push_request(int area, int db, Variable&&) = 0;
+	virtual std::vector<std::string> export_results(MessageCommands&&) = 0;
 
 	virtual ~ISPSRequest()
 	{
@@ -117,12 +121,12 @@ public:
 		m_result.resize(m_result.size() + 1);
 	}
 
-	void push_request(const Request &r) override final
+	void push_request(int area, int db, Variable&& r) override final
 	{
 		if (m_p.plen >= 20 || m_p.dlen + r.size >= PDU_READ_LIMIT)
 			send();
 
-		daveAddVarToReadRequest(&m_p, r.area, r.dbNum, r.start, r.size);
+		daveAddVarToReadRequest(&m_p, area, db, r.start, r.size);
 	}
 
 	std::vector<std::string> export_as_vec(std::vector<Request>&& original) override final
@@ -154,12 +158,12 @@ public:
 		m_result.resize(m_result.size() + 1);
 	}
 
-	void push_request(const Request& r) override final
+	void push_request(int area, int db, Variable&& r) override final
 	{
 		if (m_p.plen >= 20 || m_p.dlen + r.size >= PDU_WRITE_LIMIT)
 			send();
 
-		daveAddVarToWriteRequest(&m_p, r.area, r.dbNum, r.start, r.size, const_cast<char*>(r.data.c_str()));
+		daveAddVarToWriteRequest(&m_p, area, db, r.start, r.size, r.val->data());
 	}
 
 	std::vector<std::string> export_as_vec(std::vector<Request>&&)
@@ -172,42 +176,48 @@ public:
 template<typename Impl>
 class ESPSIO
 {
-	Impl* pthis = static_cast<Impl*>(this);
+	const Impl* underlying() const noexcept { return static_cast<Impl*>(this); }
+	Impl* underlying() noexcept { return static_cast<Impl*>(this); }
 
 public:
 	ESPSIO() = default;
 
-	template<typename T>
-	Impl& prepare_request()
+	template<typename In, typename Out>
+	auto request(const MessageCommands& c)
 	{
-		m_req = std::make_unique<T>(pthis->connection_ptr());
+		auto temp = c;
+		return request<In, Out>(std::move(temp));
 	}
 
-	auto request(std::vector<Request>&& requests)
+	template<typename In, typename Out>
+	auto request(MessageCommands&& requests)
 	{
-		assert(requests.begin() != requests.end() && "requests parameter must not be empty.");
+		assert(!requests.empty() && "requests parameter must not be empty.");
 
-		std::sort(requests.begin(), requests.end(), 
-			[](const Request& r1, const Request& r2) constexpr { return r1.start < r2.start; });
+		std::unique_ptr<In> con_in = std::make_unique<In>(pthis->connection_ptr());
+		std::unique_ptr<Out> con_out = std::make_unique<Out>(pthis->connection_ptr());
 
-		//size_t maxDB = 0;
-		//for (auto& curReq : requests)
-		//	if (maxDB < r.dbNum)
-		//		maxDB = r./*We are better in C++ than you*/dbNum;
-		//
-		//for (auto [request, curDB, lastReq] = std::tuple(requests.begin(), 0, 0); curDB < maxDB; ++curDB)
-		//	if (curDB == request->dbNum)
-		//	{
-		//		const auto sum = request->start + request->size + 1;
-		//		if (++request == requests.end())
-		//			request = requests.begin();
-		//
-		//		if (sum != request->start)
-		//		{
-		//			lastReq = sum;
-		//			m_req->push_request(Request{ request->area, curDB, lastReq, sum - 1 });
-		//		}
-		//	}
+		for (auto iter_com = requests.begin(); iter_com != requests.end(); ++iter_com)
+		{
+			iter_com->addr_sort();
+
+			std::string data_sum_out;
+			int sum_in, sum_out;
+			for (auto iter_var = iter_com->begin(); iter_var != iter_com->end(); ++iter_var)
+			{
+				if (iter_var->val.has_value())
+				{
+					sum_in = iter_var->start + iter_var->size + 1;
+					data_sum_out += *iter_var->val;
+				}
+				else
+				{
+
+				}
+			}
+
+			//con_in->push_request(iter_com->area(), iter_com->db(), {  });
+		}
 
 		for (auto [request, lastReqDB, data_sum] = std::tuple(requests.begin(), 0, std::string()); true;)
 		{
@@ -232,9 +242,6 @@ public:
 
 		return m_req->export_as_vec(requests);
 	}
-
-private:
-	std::unique_ptr<ISPSRequest> m_req;
 };
 
 

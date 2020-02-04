@@ -1,7 +1,8 @@
 #include "Includes.h"
 #include "Server.h"
-#include "SPS.h"
-#include "Parser.h"
+//#include "SPS.h"
+#include "Message.h"
+#include "Command.h"
 
 std::string get_auth_code(asio::io_context& io)
 {
@@ -34,8 +35,8 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
-	SPS sps;
-	sps.connect(argv[1]);
+	//SPS sps;
+	//sps.connect(argv[1]);
 
 	g_log.seperate();
 
@@ -50,12 +51,18 @@ int main(int argc, char** argv)
 	{
 		std::this_thread::sleep_until(till_next);
 
+		//Get data from SPS
+
+		//Get data from Server
+
+		//Send data including SPS "information variables"
+
 		auto message = query<Session>(io, "localhost", "/data.txt");
 
 		MessageCommands commands;
 		commands.parse_message(message.content);
 
-		till_next += std::chrono::seconds(commands.get("requesttimeout").val().value());
+		till_next += commands.timeout();
 
 
 
