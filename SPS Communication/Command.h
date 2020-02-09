@@ -25,6 +25,11 @@ public:
 	using vec_t::back;
 	using vec_t::resize;
 
+	size_t byte_size() const noexcept
+	{
+		return std::accumulate(this->begin(), this->end(), 0u, [](size_t num, const Variable& i) { return num + i.data.size(); });
+	}
+
 private:
 	int m_db;
 };

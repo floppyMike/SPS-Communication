@@ -7,6 +7,8 @@
 #include <queue>
 #include <charconv>
 #include <optional>
+#include <numeric>
+#include <any>
 
 #define BCCWIN
 #include <nodavesimple.h>

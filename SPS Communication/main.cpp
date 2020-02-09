@@ -1,6 +1,6 @@
 #include "Includes.h"
 #include "Server.h"
-//#include "SPS.h"
+#include "SPS.h"
 #include "Message.h"
 #include "Command.h"
 
@@ -35,8 +35,8 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
-	//SPS sps;
-	//sps.connect(argv[1]);
+	SPS sps;
+	sps.connect(argv[1]);
 
 	g_log.seperate();
 
@@ -47,22 +47,34 @@ int main(int argc, char** argv)
 
 	g_log.seperate();
 
-	for (auto [quit, till_next] = std::pair(false, std::chrono::steady_clock::now()); !quit;)
+	g_log.initiate("setup");
+
+	//Get data from Server
+	const auto message = query<Session>(io, "localhost", "/data.txt");
+	MessageCommands com;
+	com.parse_message(message.content);
+	auto timeout = std::chrono::steady_clock::now() + com.timeout();
+
+
+	for (auto quit = false; !quit;)
 	{
-		std::this_thread::sleep_until(till_next);
+		std::this_thread::sleep_until(timeout);
 
 		//Get data from SPS
+		const auto& curr_com = com.get();
+		auto byte_arr = sps.in<SPSReadRequest>(curr_com.db(), curr_com.byte_size());
 
 		//Get data from Server
-
-		//Send data including SPS "information variables"
-
-		auto message = query<Session>(io, "localhost", "/data.txt");
-
+		const auto message = query<Session>(io, "localhost", "/data.txt");
 		MessageCommands commands;
 		commands.parse_message(message.content);
 
-		till_next += commands.timeout();
+		commands.emplace_back(bytearray_to_command(byte_arr, commands.get()));
+
+		//Send data including SPS "information variables"
+
+
+		timeout += commands.timeout();
 
 
 

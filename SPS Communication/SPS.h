@@ -87,7 +87,7 @@ ByteArray command_to_bytearray(const Com_t& com)
 }
 
 template<typename Com_t>
-Com_t&& bytearray_to_command(const ByteArray& arr, Com_t&& command_origin)
+Com_t bytearray_to_command(const ByteArray& arr, Com_t&& command_origin)
 {
 	Com_t com;
 	com.db(arr.db);
@@ -109,6 +109,8 @@ Com_t&& bytearray_to_command(const ByteArray& arr, Com_t&& command_origin)
 			iter += Com_t::TYPE_SIZE[iter_com->type] / 8;
 		}
 	}
+
+	return com;
 }
 
 class ISPSRequest
@@ -133,6 +135,8 @@ public:
 		for (auto& i : m_result)
 			for (auto* iter_res = i.results; iter_res != i.results + i.numResults; ++iter_res)
 				arr.array.insert(arr.array.end(), iter_res->bytes, iter_res->bytes + iter_res->length);
+
+		return arr;
 	}
 
 protected:
@@ -145,7 +149,7 @@ protected:
 class SPSReadRequest : ISPSRequest
 {
 public:
-	static constexpr size_t PDU_READ_LIMIT = 222;
+	static constexpr int PDU_READ_LIMIT = 222;
 
 	SPSReadRequest(daveConnection* c)
 		: ISPSRequest(c)
@@ -256,8 +260,8 @@ public:
 		}
 		write.add_vars({ { iter_beg, bytes.array.end() }, bytes.db });
 
-		read.send();
-		return read.results(db);
+		write.send();
+		return write.results(bytes.db);
 	}
 
 };
