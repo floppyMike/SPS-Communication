@@ -142,7 +142,7 @@ public:
 
 		std::string buf;
 
-		buf += 
+		//buf += 
 
 		for (auto& com : *underlying())
 		{
