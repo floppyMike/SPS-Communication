@@ -14,6 +14,8 @@ public:
 		m_data = dat;
 	}
 
+	std::string_view data() const noexcept { return m_data; }
+
 	void reset() noexcept
 	{
 		m_loc = 0u;
@@ -24,35 +26,63 @@ public:
 		return m_data.find(delim, m_loc);
 	}
 
-	auto get_until(char delim)
+	std::optional<std::string_view> get_until(char delim)
 	{
-		const auto delim_loc = find(delim);
-		auto&& sub_data = m_data.substr(m_loc, delim_loc - m_loc);
-		m_loc = delim_loc + 1;
+		if (const auto loc = find(delim); loc != std::string_view::npos)
+			return get_until(loc - m_loc);
+
+		return std::nullopt;
+	}
+	template<size_t _num>
+	std::optional<std::string_view> get_until(const std::array<char, _num>& l)
+	{
+		for (auto iter = m_data.begin() + m_loc; iter != m_data.end(); ++iter)
+			for (const auto& i : l)
+				if (*iter == i)
+					return get_until(std::distance(m_data.begin() + m_loc, iter));
+
+		return std::nullopt;
+	}
+	std::string_view get_until(size_t count)
+	{
+		assert(m_loc + count <= m_data.size() && "String is too short");
+
+		auto&& sub_data = m_data.substr(m_loc, count);
+		m_loc += count;
 
 		return sub_data;
 	}
 
-	void skip_until(char delim)
+	bool skip_until(char delim)
 	{
-		m_loc = find(delim) + 1;
+		if (const auto loc = find(delim); loc != std::string_view::npos)
+		{
+			m_loc = loc + 1;
+			return false;
+		}
+
+		return true;
 	}
-	void skip(size_t num)
+	bool skip(size_t num) noexcept
 	{
+		if (m_loc + num > m_data.size())
+			return false;
+
 		m_loc += num;
+		return true;
 	}
 
-	bool is_same(std::string_view str)
+	bool is_same(std::string_view str) noexcept
 	{
-		assert(m_data.size() - m_loc >= str.size() && "String is too big.");
+		if (m_data.size() - m_loc < str.size())
+			return false;
 
-		const auto temp = m_data.size() - m_loc >= str.size() && std::equal(&m_data[m_loc], &m_data[m_loc + str.size() - 1], str.data());
+		const auto res = m_data.size() - m_loc >= str.size() && std::equal(&m_data[m_loc], &m_data[m_loc + str.size() - 1], str.data());
 
-		if (!temp)
-			throw Logger("Message synthax incorrect. Missing " + std::string(str));
+		if (res)
+			skip(str.size());
 
-		m_loc += str.size();
-		return temp;
+		return res;
 	}
 
 	auto current_loc() const noexcept
@@ -60,21 +90,34 @@ public:
 		return m_loc;
 	}
 
-	auto get_num(char delim, int base = 10)
+	template<typename T, typename = typename std::enable_if_t<std::is_arithmetic_v<T>>>
+	std::optional<T> get_num(char delim, int base = 10)
 	{
 		const auto end = find(delim);
-		long temp;
-		if (std::from_chars(&m_data[m_loc], &m_data[end], temp, base).ec == std::errc::invalid_argument)
-			throw Logger("DB isn't a number or isn't detected.");
+		T temp;
+		if (end == std::string_view::npos || std::from_chars(&m_data[m_loc], &m_data[end], temp, base).ec == std::errc::invalid_argument)
+			return std::nullopt;
 
 		m_loc = end + 1;
 		return temp;
 	}
 
-	char peek()
+	std::optional<char> peek()
 	{
-		assert(m_loc + 1 < m_data.size() && "Nothing left to output at parser.");
+		if (m_loc + 1 >= m_data.size())
+			return std::nullopt;
+
 		return m_data[m_loc + 1];
+	}
+
+	bool at_end() const noexcept
+	{
+		return m_loc == m_data.size();
+	}
+
+	void mov(int dis)
+	{
+		m_loc += dis;
 	}
 
 private:
