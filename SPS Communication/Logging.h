@@ -15,6 +15,9 @@ public:
 	{
 	}
 
+	Logger(const Logger&) = delete;
+	Logger(Logger&&) = delete;
+
 	~Logger()
 	{
 		std::ofstream file(LOG_FILE.data(), std::ios::out | std::ios::binary | std::ios::app);
@@ -65,7 +68,7 @@ public:
 
 		return *this;
 	}
-//Hallo
+
 private:
 	std::mutex m_mutex;
 	std::string m_buffer;
@@ -90,4 +93,7 @@ private:
 	}
 };
 
-static Logger g_log;
+namespace
+{
+	Logger g_log;
+}

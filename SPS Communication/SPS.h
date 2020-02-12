@@ -68,155 +68,50 @@ private:
 	}
 };
 
-struct ByteArray
-{
-	std::vector<char> array;
-	int db;
-};
-
-template<typename Com_t>
-ByteArray command_to_bytearray(const Com_t& com)
-{
-	ByteArray arr;
-	arr.db = com.db();
-
-	for (auto& i : com)
-		arr.array.insert(arr.array.end(), i.begin(), i.end());
-
-	return arr;
-}
-
-template<typename Com_t>
-Com_t bytearray_to_command(const ByteArray& arr, Com_t&& command_origin)
-{
-	Com_t com;
-	com.db(arr.db);
-
-	auto iter = arr.array.begin();
-	size_t bool_count = 0;
-	for (auto iter_com = command_origin.begin(); iter_com != command_origin.end(); ++iter_com)
-	{
-		if (iter_com->type == Com_t::BOOL)
-		{
-			com.emplace_back(std::vector<char>{ 1, *iter & (1 << bool_count++) }, iter_com->type);
-			//if (iter_com + 1 == command_origin.end() || (iter_com + 1)->type != Com_t::BOOL)
-			//	bool_count = 0;
-		}
-		else
-		{
-			bool_count = 0;
-			com.emplace_back(std::vector<char>{ iter, iter + Com_t::TYPE_SIZE[iter_com->type] / 8 }, iter_com->type);
-			iter += Com_t::TYPE_SIZE[iter_com->type] / 8;
-		}
-	}
-
-	return com;
-}
-
-class ISPSRequest
-{
-public:
-	ISPSRequest(daveConnection* c)
-		: m_con(c)
-	{
-	}
-
-	virtual ~ISPSRequest()
-	{
-		for (auto& i : m_result)
-			daveFreeResults(&i);
-	}
-
-	ByteArray results(int db)
-	{
-		ByteArray arr;
-		arr.db = db;
-
-		for (auto& i : m_result)
-			for (auto* iter_res = i.results; iter_res != i.results + i.numResults; ++iter_res)
-				arr.array.insert(arr.array.end(), iter_res->bytes, iter_res->bytes + iter_res->length);
-
-		return arr;
-	}
-
-protected:
-	daveConnection* m_con;
-	PDU m_p;
-
-	std::vector<daveResultSet> m_result;
-};
-
-class SPSReadRequest : ISPSRequest
-{
-public:
-	static constexpr int PDU_READ_LIMIT = 222;
-
-	SPSReadRequest(daveConnection* c)
-		: ISPSRequest(c)
-	{
-		davePrepareReadRequest(c, &m_p);
-	}
-
-	void add_vars(int db, int len)
-	{
-		assert(len <= PDU_READ_LIMIT && "Read request to SPS to large.");
-
-		if (m_curr_size += len >= PDU_READ_LIMIT)
-			send();
-
-		daveAddVarToReadRequest(&m_p, daveDB, db, 0, len);
-	}
-
-	void send()
-	{
-		m_result.resize(m_result.size() + 1);
-
-		m_curr_size = 0;
-		if (auto res = daveExecReadRequest(m_con, &m_p, &m_result.back()); res != 0)
-			throw Logger(daveStrerror(res));
-	}
-
-	using ISPSRequest::results;
-
-private:
-	int m_curr_size = 0;
-};
-
-class SPSWriteRequest : ISPSRequest
-{
-public:
-	static constexpr size_t PDU_WRITE_LIMIT = 222;
-
-	SPSWriteRequest(daveConnection* c)
-		: ISPSRequest(c)
-	{
-		davePrepareWriteRequest(c, &m_p);
-	}
-
-	void add_vars(const ByteArray& arr)
-	{
-		assert(arr.array.size() <= PDU_WRITE_LIMIT && "Read request to SPS to large.");
-
-		if (m_curr_size += arr.array.size() >= PDU_WRITE_LIMIT)
-			send();
-
-		daveAddVarToWriteRequest(&m_p, daveDB, arr.db, 0, arr.array.size(), const_cast<char*>(arr.array.data()));
-	}
-
-	void send()
-	{
-		m_result.resize(m_result.size() + 1);
-
-		m_curr_size = 0;
-		if (auto res = daveExecWriteRequest(m_con, &m_p, &m_result.back()); res != 0)
-			throw Logger(daveStrerror(res));
-	}
-
-	using ISPSRequest::results;
-
-private:
-	int m_curr_size = 0;
-};
+//struct ByteArray
+//{
+//	std::vector<char> array;
+//	int db;
+//};
+//
+//template<typename Com_t>
+//ByteArray command_to_bytearray(const Com_t& com)
+//{
+//	ByteArray arr;
+//	arr.db = com.db();
+//
+//	for (auto& i : com)
+//		arr.array.insert(arr.array.end(), i.begin(), i.end());
+//
+//	return arr;
+//}
+//
+//template<typename Com_t>
+//Com_t bytearray_to_command(const ByteArray& arr, Com_t&& command_origin)
+//{
+//	Com_t com;
+//	com.db(arr.db);
+//
+//	auto iter = arr.array.begin();
+//	size_t bool_count = 0;
+//	for (auto iter_com = command_origin.begin(); iter_com != command_origin.end(); ++iter_com)
+//	{
+//		if (iter_com->type == Com_t::BOOL)
+//		{
+//			com.emplace_back(std::vector<char>{ 1, *iter & (1 << bool_count++) }, iter_com->type);
+//			//if (iter_com + 1 == command_origin.end() || (iter_com + 1)->type != Com_t::BOOL)
+//			//	bool_count = 0;
+//		}
+//		else
+//		{
+//			bool_count = 0;
+//			com.emplace_back(std::vector<char>{ iter, iter + Com_t::TYPE_SIZE[iter_com->type] / 8 }, iter_com->type);
+//			iter += Com_t::TYPE_SIZE[iter_com->type] / 8;
+//		}
+//	}
+//
+//	return com;
+//}
 
 template<typename Impl>
 class ESPSIO
@@ -233,6 +128,8 @@ public:
 		assert(len != 0);
 
 		ReadSession read(underlying()->connection_ptr());
+
+
 
 		for (int curr_len = std::clamp(len, 0, ReadSession::PDU_READ_LIMIT); len > 0; curr_len = std::clamp(len, 0, ReadSession::PDU_READ_LIMIT))
 		{

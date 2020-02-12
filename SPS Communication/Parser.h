@@ -47,7 +47,7 @@ public:
 		for (auto iter = m_data.begin() + m_loc; iter != m_data.end(); ++iter)
 			for (const auto& i : l)
 				if (*iter == i)
-					return get_until(std::distance(m_data.begin() + m_loc, iter));
+					return get_until(static_cast<size_t>(std::distance(m_data.begin() + m_loc, iter)));
 
 		return std::nullopt;
 	}
@@ -99,11 +99,11 @@ public:
 	}
 
 	template<typename T, typename = typename std::enable_if_t<std::is_arithmetic_v<T>>>
-	std::optional<T> get_num(char delim, int base = 10)
+	std::optional<T> get_num(char delim)
 	{
 		const auto end = find(delim);
 		T temp;
-		if (end == std::string_view::npos || std::from_chars(&m_data[m_loc], &m_data[end], temp, base).ec == std::errc::invalid_argument)
+		if (end == std::string_view::npos || std::from_chars(&m_data[m_loc], &m_data[end], temp).ec == std::errc::invalid_argument)
 			return std::nullopt;
 
 		m_loc = end + 1;

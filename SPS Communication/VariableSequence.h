@@ -1,11 +1,12 @@
 #pragma once
 
 #include "Includes.h"
+#include "Logging.h"
 #include "Parser.h"
 #include "Variable.h"
 
 template<typename _Var, template<typename> class... Ex>
-class basic_VarSeq : std::vector<_Var>, public Ex<basic_VarSeq<Ex...>>...
+class basic_VarSeq : std::vector<_Var>, public Ex<basic_VarSeq<_Var, Ex...>>...
 {
 	using vec_t = std::vector<_Var>;
 
@@ -44,7 +45,7 @@ public:
 		Parser p;
 		p.data(message);
 
-		if (const auto num = p.get_num('!'); num.has_value())
+		if (const auto num = p.get_num<unsigned int>('!'); num.has_value())
 			underlying()->db(num.value());
 		else
 			throw Logger("Db not found in message.");
@@ -53,7 +54,7 @@ public:
 		{
 			Variable::Type typ;
 			if (const auto res = p.get_num<unsigned int>('_'); res.has_value())
-				typ = res.value();
+				typ = static_cast<Variable::Type>(res.value());
 			else
 				throw Logger("Variable type missing.");
 
@@ -62,23 +63,24 @@ public:
 
 			switch (typ)
 			{
+			case Variable::BOOL:
 			case Variable::CHAR:
 			case Variable::BYTE:
-				underlying()->back().set<int8_t>(_get_val_<int8_t>(p));
+				underlying()->back().template set<int8_t>(_get_val_<int8_t>(p));
 				break;
 
 			case Variable::INT:
 			case Variable::WORD:
-				underlying()->back().set<int16_t>(_get_val_<int16_t>(p));
+				underlying()->back().template set<int16_t>(_get_val_<int16_t>(p));
 				break;
 
 			case Variable::DINT:
 			case Variable::DWORD:
-				underlying()->back().set<int32_t>(_get_val_<int32_t>(p));
+				underlying()->back().template set<int32_t>(_get_val_<int32_t>(p));
 				break;
 
 			case Variable::REAL:
-				underlying()->back().set<float>(_get_val_<float>(p));
+				underlying()->back().template set<float>(_get_val_<float>(p));
 				break;
 
 			default:

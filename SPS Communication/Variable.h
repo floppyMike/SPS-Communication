@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Includes.h"
+#include "Logging.h"
 
 class Variable
 {
@@ -18,7 +19,7 @@ public:
 	void set(T dat)
 	{
 		if (m_type == BOOL)
-			m_data.push_back(dat);
+			m_data.push_back(static_cast<bool>(dat));
 		else
 		{
 			bool_dis = 0;

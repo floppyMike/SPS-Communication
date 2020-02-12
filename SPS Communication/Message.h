@@ -1,6 +1,7 @@
 #pragma once
 #include "Includes.h"
 #include "Command.h"
+#include "Logging.h"
 #include "Parser.h"
 
 template<typename _Type = void*, template<typename> class... Ex>
@@ -78,67 +79,5 @@ private:
 	}
 };
 
-
-template<typename Impl>
-class EConverterMes
-{
-	const Impl* underlying() const noexcept { return static_cast<const Impl*>(this); }
-	Impl* underlying() noexcept { return static_cast<Impl*>(this); }
-
-public:
-	EConverterMes() = default;
-	
-	std::string to_string(int db)
-	{
-		
-
-		std::string buf;
-
-		//buf += 
-
-		for (auto& com : *underlying())
-		{
-			for (auto& var : com)
-			{
-
-			}
-		}
-	}
-
-};
-
-
 template<typename _Type>
 using CommandList = basic_CommandList<_Type, EListParser>;
-
-
-
-
-
-
-
-struct VarList
-{
-	std::string name;
-	std::unique_ptr<void> var;
-};
-
-
-template<template<typename> class... Ex>
-class basic_CommandLists : std::vector<VarList>
-{
-	using vec_t = std::vector<VarList>;
-
-public:
-	basic_CommandLists() = default;
-
-	using vec_t::size;
-	using vec_t::begin;
-	using vec_t::end;
-	using vec_t::front;
-	using vec_t::back;
-	using vec_t::empty;
-	using vec_t::emplace_back;
-
-
-};

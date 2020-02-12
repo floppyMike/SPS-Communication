@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Includes.h"
+#include "Logging.h"
 #include "Parser.h"
 
 class RequestProcessing
