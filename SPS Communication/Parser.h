@@ -26,6 +26,14 @@ public:
 		return m_data.find(delim, m_loc);
 	}
 
+	std::optional<std::string_view> get_until_w_end(char delim)
+	{
+		if (const auto loc = find(delim); loc != std::string_view::npos)
+			return get_until(loc + 1 - m_loc);
+
+		return std::nullopt;
+	}
+
 	std::optional<std::string_view> get_until(char delim)
 	{
 		if (const auto loc = find(delim); loc != std::string_view::npos)

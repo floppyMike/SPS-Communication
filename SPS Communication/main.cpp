@@ -43,12 +43,28 @@ int main(int argc, char** argv)
 
 	asio::io_context io;
 	
-	const auto auth_code = get_auth_code(io);
-	std::cout << auth_code << '\n';
+	//const auto auth_code = get_auth_code(io);
+	//std::cout << auth_code << '\n';
+
+	constexpr std::string_view message =
+		"#START\n"
+		"#DEBUG\n"
+		"#DATA\n"
+		"[requesttimeout]=>5\n"
+		"[state]=>0!0_1!1_89!|1!0_1!2_100!\n"
+		"#END";
+
+	constexpr std::string_view message_auth =
+		"#START\n"
+		"#DEBUG\n"
+		"#DATA\n"
+		"[requesttimeout]=>5\n"
+		"[authcode]=>123456789asdfghjkl\n"
+		"#END";
 
 	//Filter through authcode
 	RequestProcessing curr_req;
-	curr_req.parse(auth_code);
+	curr_req.parse(message);
 	curr_req.print_debug();
 
 	CommandList<AuthElement> auth_list;

@@ -50,14 +50,14 @@ public:
 		if (p.is_same("[requesttimeout]=>"))
 			req_found = true,
 			_extract_time_(p);
-		else if constexpr (!std::is_same_v<type_t, void*>)
+		if constexpr (!std::is_same_v<type_t, void*>)
 		{
-			if (const auto str = p.get_until(COM_SEP); str.has_value())
+			if (const auto str = p.get_until_w_end(COM_SEP); str.has_value())
 				underlying()->element().parse(str.value());
 			else
 				throw Logger("state or authcode variable not found.");
 
-			if (p.is_same("[requesttimeout]=>"))
+			if (!req_found && p.is_same("[requesttimeout]=>"))
 				req_found = true,
 				_extract_time_(p);
 
