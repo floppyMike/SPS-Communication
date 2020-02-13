@@ -84,7 +84,7 @@ public:
 		davePrepareWriteRequest(c, &m_p);
 	}
 
-	void add_vars(int db, const std::vector<char>& arr)
+	void add_vars(int db, const std::vector<uint8_t>& arr)
 	{
 		assert(arr.size() <= PDU_WRITE_LIMIT && "Read request to SPS to large.");
 
@@ -93,7 +93,7 @@ public:
 
 		m_curr_size += arr.size();
 
-		daveAddVarToWriteRequest(&m_p, daveDB, db, 0, arr.size(), const_cast<char*>(arr.data()));
+		daveAddVarToWriteRequest(&m_p, daveDB, db, 0, arr.size(), const_cast<uint8_t*>(arr.data()));
 	}
 
 	void send()

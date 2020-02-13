@@ -69,51 +69,6 @@ private:
 	}
 };
 
-//struct ByteArray
-//{
-//	std::vector<char> array;
-//	int db;
-//};
-//
-//template<typename Com_t>
-//ByteArray command_to_bytearray(const Com_t& com)
-//{
-//	ByteArray arr;
-//	arr.db = com.db();
-//
-//	for (auto& i : com)
-//		arr.array.insert(arr.array.end(), i.begin(), i.end());
-//
-//	return arr;
-//}
-//
-//template<typename Com_t>
-//Com_t bytearray_to_command(const ByteArray& arr, Com_t&& command_origin)
-//{
-//	Com_t com;
-//	com.db(arr.db);
-//
-//	auto iter = arr.array.begin();
-//	size_t bool_count = 0;
-//	for (auto iter_com = command_origin.begin(); iter_com != command_origin.end(); ++iter_com)
-//	{
-//		if (iter_com->type == Com_t::BOOL)
-//		{
-//			com.emplace_back(std::vector<char>{ 1, *iter & (1 << bool_count++) }, iter_com->type);
-//			//if (iter_com + 1 == command_origin.end() || (iter_com + 1)->type != Com_t::BOOL)
-//			//	bool_count = 0;
-//		}
-//		else
-//		{
-//			bool_count = 0;
-//			com.emplace_back(std::vector<char>{ iter, iter + Com_t::TYPE_SIZE[iter_com->type] / 8 }, iter_com->type);
-//			iter += Com_t::TYPE_SIZE[iter_com->type] / 8;
-//		}
-//	}
-//
-//	return com;
-//}
-
 template<typename Impl>
 class ESPSIO
 {
@@ -137,45 +92,34 @@ public:
 		}
 
 		read.send();
-		return read.results(db);
+		return read.results();
 	}
 
 	template<typename WriteSession, typename _VarSeq>
-	void out(const _VarSeq& vars)
+	auto out(const _VarSeq& vars)
 	{
 		assert(!vars.empty());
 
 		WriteSession write(underlying()->connection_ptr());
 
+		std::vector<uint8_t> arr;
+
 		for (auto& i : vars)
 		{
-			write.add_vars()
-		}
+			if (vars.size() + i.byte_size() >= WriteSession::PDU_WRITE_LIMIT)
+			{
+				write.add_vars(vars.db(), arr);
+				arr.clear();
+			}
 
-		auto iter_beg = vars.begin(), iter_end = vars.end();
-		while (std::distance(iter_beg, iter_end) <= WriteSession::PDU_WRITE_LIMIT)
-		{
-			iter_end = iter_beg + WriteSession::PDU_WRITE_LIMIT;
-			write.add_vars({ { iter_beg, iter_end }, vars.db });
-			iter_beg = iter_end;
+			arr.insert(arr.end(), i.data().begin(), i.data().end());
 		}
-		write.add_vars({ { iter_beg, vars.array.end() }, vars.db });
 
 		write.send();
-		return write.results(vars.db);
+		return write.results();
 	}
 
 private:
-	template<typename _VarSeq>
-	std::vector<char> _to_bytearray_(const _VarSeq& seq)
-	{
-		std::vector<char> arr;
-
-		for (auto& i : seq)
-			arr.insert(arr.end(), i.begin(), i.end());
-
-		return arr;
-	}
 
 };
 

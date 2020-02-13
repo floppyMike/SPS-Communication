@@ -23,6 +23,8 @@ public:
 	using vec_t::end;
 	using vec_t::front;
 	using vec_t::back;
+	using vec_t::empty;
+	using vec_t::size;
 	using vec_t::operator[];
 	using vec_t::emplace_back;
 	using vec_t::push_back;
@@ -47,6 +49,29 @@ public:
 
 private:
 
+};
+
+template<typename Impl>
+class EVarByteArray
+{
+	const Impl* underlying() const noexcept { return static_cast<const Impl*>(this); }
+	Impl* underlying() noexcept { return static_cast<Impl*>(this); }
+
+public:
+	EVarByteArray() = default;
+
+	void fill_out(const std::vector<uint8_t>& bytes)
+	{
+		if (underlying()->total_byte_size() != bytes.size())
+			throw Logger("Too many or not enought bytes to fill out from SPS.");
+
+		for (auto [iter_byte, iter_seq] = std::pair(bytes.begin(), underlying()->begin()); iter_seq != underlying()->end(); ++iter_seq)
+		{
+			const auto iter_byte_end = iter_byte + iter_seq->byte_size();
+			iter_seq->fill_var({ iter_byte, iter_byte_end });
+			iter_byte = iter_byte_end;
+		}
+	}
 };
 
 template<typename Impl>
@@ -120,4 +145,4 @@ private:
 };
 
 
-using VarSeq = basic_VarSeq<Variable, EVarParser, EVarInfo>;
+using VarSeq = basic_VarSeq<Variable, EVarParser, EVarInfo, EVarByteArray>;

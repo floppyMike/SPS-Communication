@@ -2,6 +2,7 @@
 #include "Logging.h"
 #include "Server.h"
 #include "SPS.h"
+#include "SPSIO.h"
 #include "Message.h"
 #include "Request.h"
 #include "AuthElement.h"
@@ -41,7 +42,7 @@ int main(int argc, char** argv)
 	}
 
 	SPS sps;
-	//sps.connect(argv[1]);
+	sps.connect(argv[1]);
 
 	g_log.seperate();
 
@@ -76,11 +77,9 @@ int main(int argc, char** argv)
 	CommandList<AuthElement> auth_list;
 	auth_list.parse(curr_req.data());
 
-	const auto auth_timeout = std::chrono::steady_clock::now() + auth_list.timeout();
-
 	g_log.seperate();
 
-	for (auto [quit, timeout] = std::pair(false, auth_timeout); !quit;)
+	for (auto [quit, timeout] = std::pair(false, std::chrono::steady_clock::now() + auth_list.timeout()); !quit;)
 	{
 		std::this_thread::sleep_until(timeout);
 
@@ -91,22 +90,13 @@ int main(int argc, char** argv)
 		CommandList<StateElement> state_list;
 		state_list.parse(req.data());
 
-		////Get data from SPS
-		//const auto& curr_com = com.get();
-		//auto byte_arr = sps.in<SPSReadRequest>(curr_com.db(), curr_com.byte_size());
+		sps.out<SPSWriteRequest>(state_list.element().front());
 
-		////Get data from Server
-		//const auto message = query<Session>(io, "localhost", "/data.txt");
-		//CommandList commands;
-		//commands.parse_message(message.content);
-
-		//commands.emplace_back(bytearray_to_command(byte_arr, commands.get()));
-
-		////Send data including SPS "information variables"
+		auto byte_arr = sps.in<SPSReadRequest>(state_list.element().back().db(), state_list.element().back().total_byte_size());
+		state_list.element().back().fill_out(byte_arr);
 
 
-		//timeout += commands.timeout();
-
+		timeout += state_list.timeout();
 
 
 		g_log.seperate();

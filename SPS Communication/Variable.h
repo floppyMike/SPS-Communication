@@ -25,7 +25,7 @@ public:
 			bool_dis = 0;
 			m_data.clear();
 
-			_fill_var_<T>(dat);
+			fill_var<T>(dat);
 		}
 	}
 
@@ -33,6 +33,20 @@ public:
 	{
 		return TYPE_SIZE[m_type];
 	}
+
+	template<typename T, typename = typename std::enable_if_t<std::is_arithmetic_v<T>>>
+	void fill_var(T val)
+	{
+		m_data.resize(sizeof(T));
+		*reinterpret_cast<T*>(&m_data.front()) = val;
+	}
+
+	void fill_var(const std::vector<uint8_t>& val)
+	{
+		m_data = val;
+	}
+
+	const auto& data() const noexcept { return m_data; }
 
 private:
 	std::vector<uint8_t> m_data;
@@ -50,13 +64,6 @@ private:
 		}
 
 		m_data.back() |= val << bool_dis++;
-	}
-
-	template<typename T>
-	void _fill_var_(T val)
-	{
-		m_data.resize(sizeof(T));
-		*reinterpret_cast<T*>(&m_data.front()) = val;
 	}
 };
 
