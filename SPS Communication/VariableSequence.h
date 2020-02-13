@@ -101,7 +101,7 @@ public:
 			else
 				throw Logger("Variable type missing.");
 
-			if (typ != Variable::BOOL || Variable::boolean_end)
+			if (typ != Variable::BOOL || Variable::boolean_end())
 				underlying()->emplace_back(typ),
 				Variable::boolean_reset();
 

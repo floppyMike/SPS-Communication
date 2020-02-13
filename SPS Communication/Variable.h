@@ -54,7 +54,7 @@ public:
 
 	static bool boolean_end() noexcept 
 	{ 
-		return bool_dis; 
+		return bool_dis == 8; 
 	}
 
 	static void boolean_reset() noexcept 
@@ -66,6 +66,6 @@ private:
 	std::vector<uint8_t> m_data;
 	Type m_type;
 
-	inline static size_t bool_dis = 0;
+	inline static size_t bool_dis = 8;
 };
 

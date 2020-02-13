@@ -41,8 +41,8 @@ int main(int argc, char** argv)
 		return 1;
 	}
 
-	SPS sps;
-	sps.connect(argv[1]);
+	//SPS sps;
+	//sps.connect(argv[1]);
 
 	g_log.seperate();
 
@@ -90,10 +90,10 @@ int main(int argc, char** argv)
 		CommandList<StateElement> state_list;
 		state_list.parse(req.data());
 
-		sps.out<SPSWriteRequest>(state_list.element().front());
+		//sps.out<SPSWriteRequest>(state_list.element().front());
 
-		auto byte_arr = sps.in<SPSReadRequest>(state_list.element().back().db(), state_list.element().back().total_byte_size());
-		state_list.element().back().fill_out(byte_arr);
+		//auto byte_arr = sps.in<SPSReadRequest>(state_list.element().back().db(), state_list.element().back().total_byte_size());
+		//state_list.element().back().fill_out(byte_arr);
 
 
 		timeout += state_list.timeout();
