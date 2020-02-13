@@ -1,7 +1,7 @@
 #pragma once
 #include "Includes.h"
 
-class Logger
+class Logger : public std::exception
 {
 public:
 	static constexpr std::string_view LOG_FILE = "log.txt";
@@ -68,6 +68,8 @@ public:
 
 		return *this;
 	}
+
+	const char* what() const noexcept override { return m_buffer.data(); }
 
 private:
 	std::mutex m_mutex;

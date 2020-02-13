@@ -106,7 +106,7 @@ public:
 				Variable::boolean_reset();
 
 			switch (typ)
-			{
+			{						
 			case Variable::CHAR:
 			case Variable::BYTE:
 			case Variable::BOOL:
@@ -132,6 +132,8 @@ public:
 				break;
 			}
 		}
+
+		Variable::boolean_reset();
 	}
 
 private:
