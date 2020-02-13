@@ -101,14 +101,15 @@ public:
 			else
 				throw Logger("Variable type missing.");
 
-			underlying()->emplace_back(typ);
-
+			if (typ != Variable::BOOL || Variable::boolean_end)
+				underlying()->emplace_back(typ),
+				Variable::boolean_reset();
 
 			switch (typ)
 			{
-			case Variable::BOOL:
 			case Variable::CHAR:
 			case Variable::BYTE:
+			case Variable::BOOL:
 				underlying()->back().template set<int8_t>(_get_val_<int8_t>(p));
 				break;
 

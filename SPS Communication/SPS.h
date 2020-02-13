@@ -38,7 +38,10 @@ private:
 
 	void _open_socket_(std::string_view port)
 	{
-		if ((m_serial.rfd = m_serial.wfd = openSocket(102, ::_strdup(port.data()))) == 0)
+		m_serial.rfd = openSocket(102, const_cast<char*>("192.168.209.128"));/*::_strdup(port.data());*/
+		m_serial.wfd = m_serial.rfd;
+
+		if (m_serial.rfd == 0)
 			throw Logger("Couldn't open serial port" + std::string(port));
 	}
 
@@ -64,7 +67,7 @@ private:
 	void _init_connection_()
 	{
 		m_connection = daveNewConnection(m_interface, 2, 0, 0);
-		if (daveConnectPLC(m_connection) == 0)
+		if (daveConnectPLC(m_connection) != 0)
 			throw Logger("Couldn't connect to PLC.");
 	}
 };

@@ -57,7 +57,7 @@ int main(int argc, char** argv)
 		"Hello There!\n"
 		"#DATA\n"
 		"[requesttimeout]=>5\n"
-		"[state]=>0!0_1!1_89!|1!0_1!2_100!\n"
+		"[state]=>2!0_1!0_1!1_9!|5!5_1!5_1!5_1!5_1!5_1!5_1!\n"
 		"#END";
 
 	constexpr std::string_view message_auth =

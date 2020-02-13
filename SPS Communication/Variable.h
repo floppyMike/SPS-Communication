@@ -19,7 +19,11 @@ public:
 	void set(T dat)
 	{
 		if (m_type == BOOL)
-			m_data.push_back(static_cast<bool>(dat));
+		{
+			if (bool_dis == 0)
+				m_data.emplace_back();
+			m_data.back() |= static_cast<uint8_t>(dat) << bool_dis++;
+		}
 		else
 		{
 			bool_dis = 0;
@@ -48,22 +52,20 @@ public:
 
 	const auto& data() const noexcept { return m_data; }
 
+	static bool boolean_end() noexcept 
+	{ 
+		return bool_dis; 
+	}
+
+	static void boolean_reset() noexcept 
+	{ 
+		bool_dis = 0;
+	}
+
 private:
 	std::vector<uint8_t> m_data;
 	Type m_type;
 
 	inline static size_t bool_dis = 0;
-
-	void _push_bit_(uint8_t val)
-	{
-		if (const auto is_full = bool_dis == 8; bool_dis == 0 || is_full)
-		{
-			m_data.emplace_back();
-			if (is_full)
-				bool_dis = 0;
-		}
-
-		m_data.back() |= val << bool_dis++;
-	}
 };
 
