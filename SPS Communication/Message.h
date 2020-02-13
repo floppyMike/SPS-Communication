@@ -1,192 +1,82 @@
 #pragma once
 #include "Includes.h"
-#include "Command.h"
+#include "Logging.h"
 #include "Parser.h"
 
-
-template<typename Com, template<typename> class... Ex>
-class basic_MessageCommands : std::vector<Com>, public Ex<basic_MessageCommands<Com, Ex...>>...
+template<typename _Type = void*, template<typename> class... Ex>
+class basic_CommandList : public Ex<basic_CommandList<_Type, Ex...>>...
 {
-	using vec_t = std::vector<Com>;
-
 public:
-	using Com_t = Com;
-	static constexpr char DB_NUM = 2;
+	using type_t = _Type;
+	static constexpr std::chrono::seconds DEFAULT_TIME = 10s;
 
-	basic_MessageCommands() = default;
-
-	using vec_t::reserve;
-	using vec_t::emplace_back;
-	using vec_t::empty;
-	using vec_t::begin;
-	using vec_t::end;
-	using vec_t::size;
-	using vec_t::back;
-	using vec_t::resize;
-	using vec_t::pop_back;
-
-	Com_t get()
-	{
-		assert(this->begin() != this->end() && "vector is empty");
-
-		Com_t&& temp = std::move(this->back());
-		this->pop_back();
-		return temp;
-	}
-
-	Com_t get(int db)
-	{
-		auto temp_iter = std::find_if(this->begin(), this->end(),
-			[&db](const Com_t& com) constexpr { return com.db() == db; });
-
-		assert(temp_iter != this->end() && "element not found");
-
-		Com_t&& temp = std::move(*temp_iter);
-		this->erase(temp_iter);
-		return temp;
-	}
+	basic_CommandList() = default;
 
 	const auto& timeout() const noexcept { return m_timeout; }
 	void timeout(const std::chrono::seconds& t) noexcept { m_timeout = t; }
 
+	const auto& element() const noexcept { return m_ele; }
+	void element(const _Type& ele) noexcept { m_ele = ele; }
+
+	auto& element() noexcept { return m_ele; }
+
 private:
-	std::chrono::seconds m_timeout = 10s;
+	std::chrono::seconds m_timeout = DEFAULT_TIME;
+	_Type m_ele;
 };
 
 
 template<typename Impl>
-class EParserMes : Parser
+class EListParser
 {
 	const Impl* underlying() const noexcept { return static_cast<const Impl*>(this); }
 	Impl* underlying() noexcept { return static_cast<Impl*>(this); }
 
 public:
-	enum HeaderList { START, DEBUG, DATA, END };
-
-	static constexpr std::array<std::string_view, 4> HEADERS = { "#START\n", "#DEBUG\n", "#DATA\n", "#END" };
-
-	static constexpr char ROW_SEP = '|';
 	static constexpr char COM_SEP = '\n';
 
-	EParserMes() = default;
+	EListParser() = default;
 
-	void parse_message(std::string_view message)
+	//NOTICE: Automaticaly handles requesttimeout variable.
+	void parse(std::string_view message)
 	{
-		this->data(message);
+		using type_t = typename Impl::type_t;
 
-		g_log.initiate("#START check");
-		this->is_same(HEADERS[START]);
-		g_log.complete();
+		Parser p;
+		p.data(message);
 
-		g_log.initiate("#DEBUG check");
-		if (this->is_same(HEADERS[DEBUG]))
-			_print_debug_(message);
-		g_log.complete();
+		bool req_found = false;
 
-		g_log.initiate("#DATA extractor");
-		if (this->is_same(HEADERS[DATA]))
-			_extract_commands_(message);
-		g_log.complete();
+		if (p.is_same("[requesttimeout]=>"))
+			req_found = true,
+			_extract_time_(p);
+		if constexpr (!std::is_same_v<type_t, void*>)
+		{
+			if (const auto str = p.get_until_w_end(COM_SEP); str.has_value())
+				underlying()->element().parse(str.value());
+			else
+				throw Logger("state or authcode variable not found.");
 
-		g_log.initiate("#END check");
-		this->is_same(HEADERS[END]);
-		g_log.complete();
+			if (!req_found && p.is_same("[requesttimeout]=>"))
+				req_found = true,
+				_extract_time_(p);
 
-		this->reset();
+			if (!req_found)
+				throw Logger("requesttimeout missing.");
+		}
+		else
+			throw Logger("requesttimeout missing.");
 	}
 
 private:
-	void _print_debug_(std::string_view message)
+	void _extract_time_(Parser& p)
 	{
-		const auto loc_size = this->find('#') - this->current_loc();
-		g_log.write("DEBUG: ").write(&message[this->current_loc()], loc_size);
-
-		this->skip(loc_size);
-	}
-
-	void _extract_commands_(std::string_view message)
-	{
-		//State extraction
-		this->is_same("[state]=>");
-		underlying()->reserve(2);
-		//First DB
-		underlying()->resize(underlying()->size() + 1);
-		underlying()->back().parse(this->get_until(ROW_SEP));
-		//Second DB
-		underlying()->resize(underlying()->size() + 1);
-		underlying()->back().parse(this->get_until(COM_SEP));
-
-		//Time extraction
-		this->is_same("[requesttimeout]=>");
-		int time;
-		const auto nl = this->find('\n');
-		std::from_chars(&message[this->current_loc()], &message[nl], time);
-		underlying()->timeout(std::chrono::seconds(time));
-		this->skip(nl - this->current_loc() + 1);
+		if (const auto time_int = p.get_num<unsigned long long>(COM_SEP); time_int.has_value())
+			underlying()->timeout(std::chrono::seconds(time_int.value()));
+		else 
+			throw Logger("Time isn't readable.");
 	}
 };
 
-
-template<typename Impl>
-class EConverterMes
-{
-	const Impl* underlying() const noexcept { return static_cast<const Impl*>(this); }
-	Impl* underlying() noexcept { return static_cast<Impl*>(this); }
-
-public:
-	EConverterMes() = default;
-	
-	std::string to_string(int db)
-	{
-		
-
-		std::string buf;
-
-		//buf += 
-
-		for (auto& com : *underlying())
-		{
-			for (auto& var : com)
-			{
-
-			}
-		}
-	}
-
-};
-
-
-
-using MessageCommands = basic_MessageCommands<Command, EParserMes>;
-
-
-
-
-
-
-
-struct VarList
-{
-	std::string name;
-	std::unique_ptr<void> var;
-};
-
-
-template<template<typename> class... Ex>
-class basic_CommandLists : std::vector<VarList>
-{
-	using vec_t = std::vector<VarList>;
-
-public:
-	basic_CommandLists() = default;
-
-	using vec_t::size;
-	using vec_t::begin;
-	using vec_t::end;
-	using vec_t::front;
-	using vec_t::back;
-	using vec_t::empty;
-	using vec_t::emplace_back;
-
-
-};
+template<typename _Type>
+using CommandList = basic_CommandList<_Type, EListParser>;

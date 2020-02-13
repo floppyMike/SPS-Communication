@@ -1,8 +1,12 @@
 #include "Includes.h"
+#include "Logging.h"
 #include "Server.h"
 #include "SPS.h"
+#include "SPSIO.h"
 #include "Message.h"
-#include "Command.h"
+#include "Request.h"
+#include "AuthElement.h"
+#include "StateElement.h"
 
 std::string get_auth_code(asio::io_context& io)
 {
@@ -15,12 +19,14 @@ std::string get_auth_code(asio::io_context& io)
 		}
 		catch (const std::exception & e)
 		{
-			g_log.write("Failed getting authentication code. ");
+			g_log.write("Failed getting authentication code. Error: " + std::string(e.what()) + '\n');
 			if (test_case == 2)
 				throw Logger("");
 			g_log.write(std::string("Trying again... ") + static_cast<char>(test_case + '0' + 1) + " of 3.\n");
 		}
 	}
+
+	return "";
 }
 
 
@@ -42,40 +48,55 @@ int main(int argc, char** argv)
 
 	asio::io_context io;
 	
-	const auto auth_code = get_auth_code(io);
-	std::cout << auth_code << '\n';
+	//const auto auth_code = get_auth_code(io);
+	//std::cout << auth_code << '\n';
+
+	constexpr std::string_view message =
+		"#START\n"
+		"#DEBUG\n"
+		"Hello There!\n"
+		"#DATA\n"
+		"[requesttimeout]=>5\n"
+		"[state]=>0!0_1!1_89!|1!0_1!2_100!\n"
+		"#END";
+
+	constexpr std::string_view message_auth =
+		"#START\n"
+		"#DEBUG\n"
+		"Hello There!\n"
+		"#DATA\n"
+		"[requesttimeout]=>5\n"
+		"[authcode]=>123456789asdfghjkl\n"
+		"#END";
+
+	//Filter through authcode
+	RequestProcessing curr_req;
+	curr_req.parse(message_auth);
+	curr_req.print_debug();
+
+	CommandList<AuthElement> auth_list;
+	auth_list.parse(curr_req.data());
 
 	g_log.seperate();
 
-	g_log.initiate("setup");
-
-	//Get data from Server
-	const auto message = query<Session>(io, "localhost", "/data.txt");
-	MessageCommands com;
-	com.parse_message(message.content);
-	auto timeout = std::chrono::steady_clock::now() + com.timeout();
-
-
-	for (auto quit = false; !quit;)
+	for (auto [quit, timeout] = std::pair(false, std::chrono::steady_clock::now() + auth_list.timeout()); !quit;)
 	{
 		std::this_thread::sleep_until(timeout);
 
-		//Get data from SPS
-		const auto& curr_com = com.get();
-		auto byte_arr = sps.in<SPSReadRequest>(curr_com.db(), curr_com.byte_size());
+		RequestProcessing req;
+		req.parse(message);
+		req.print_debug();
 
-		//Get data from Server
-		const auto message = query<Session>(io, "localhost", "/data.txt");
-		MessageCommands commands;
-		commands.parse_message(message.content);
+		CommandList<StateElement> state_list;
+		state_list.parse(req.data());
 
-		commands.emplace_back(bytearray_to_command(byte_arr, commands.get()));
+		sps.out<SPSWriteRequest>(state_list.element().front());
 
-		//Send data including SPS "information variables"
+		auto byte_arr = sps.in<SPSReadRequest>(state_list.element().back().db(), state_list.element().back().total_byte_size());
+		state_list.element().back().fill_out(byte_arr);
 
 
-		timeout += commands.timeout();
-
+		timeout += state_list.timeout();
 
 
 		g_log.seperate();
