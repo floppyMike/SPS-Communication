@@ -3,6 +3,7 @@
 #include "Includes.h"
 #include "Logging.h"
 #include "Message.h"
+#include "VariableSequence.h"
 
 
 template<template<typename> class... Ex>
@@ -123,13 +124,11 @@ public:
 	ESPSIO() = default;
 
 	template<typename ReadSession>
-	ByteArray in(int db, int len)
+	auto in(int db, int len)
 	{
 		assert(len != 0);
 
 		ReadSession read(underlying()->connection_ptr());
-
-
 
 		for (int curr_len = std::clamp(len, 0, ReadSession::PDU_READ_LIMIT); len > 0; curr_len = std::clamp(len, 0, ReadSession::PDU_READ_LIMIT))
 		{
@@ -141,24 +140,41 @@ public:
 		return read.results(db);
 	}
 
-	template<typename WriteSession>
-	void out(const ByteArray& bytes)
+	template<typename WriteSession, typename _VarSeq>
+	void out(const _VarSeq& vars)
 	{
-		assert(bytes.array.size() != 0);
+		assert(!vars.empty());
 
 		WriteSession write(underlying()->connection_ptr());
 
-		auto iter_beg = bytes.array.begin(), iter_end = bytes.array.begin() + bytes.array.size();
+		for (auto& i : vars)
+		{
+			write.add_vars()
+		}
+
+		auto iter_beg = vars.begin(), iter_end = vars.end();
 		while (std::distance(iter_beg, iter_end) <= WriteSession::PDU_WRITE_LIMIT)
 		{
 			iter_end = iter_beg + WriteSession::PDU_WRITE_LIMIT;
-			write.add_vars({ { iter_beg, iter_end }, bytes.db });
+			write.add_vars({ { iter_beg, iter_end }, vars.db });
 			iter_beg = iter_end;
 		}
-		write.add_vars({ { iter_beg, bytes.array.end() }, bytes.db });
+		write.add_vars({ { iter_beg, vars.array.end() }, vars.db });
 
 		write.send();
-		return write.results(bytes.db);
+		return write.results(vars.db);
+	}
+
+private:
+	template<typename _VarSeq>
+	std::vector<char> _to_bytearray_(const _VarSeq& seq)
+	{
+		std::vector<char> arr;
+
+		for (auto& i : seq)
+			arr.insert(arr.end(), i.begin(), i.end());
+
+		return arr;
 	}
 
 };

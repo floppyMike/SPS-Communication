@@ -29,6 +29,11 @@ public:
 		}
 	}
 
+	auto byte_size() const noexcept 
+	{
+		return TYPE_SIZE[m_type];
+	}
+
 private:
 	std::vector<uint8_t> m_data;
 	Type m_type;

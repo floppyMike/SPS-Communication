@@ -32,6 +32,24 @@ private:
 };
 
 template<typename Impl>
+class EVarInfo
+{
+	const Impl* underlying() const noexcept { return static_cast<const Impl*>(this); }
+	Impl* underlying() noexcept { return static_cast<Impl*>(this); }
+
+public:
+	EVarInfo() = default;
+
+	size_t total_byte_size() const noexcept
+	{
+		return std::accumulate(underlying()->begin(), underlying()->end(), 0u, [](size_t num, const Variable& i) { return num + i.byte_size(); });
+	}
+
+private:
+
+};
+
+template<typename Impl>
 class EVarParser
 {
 	const Impl* underlying() const noexcept { return static_cast<const Impl*>(this); }
@@ -102,4 +120,4 @@ private:
 };
 
 
-using VarSeq = basic_VarSeq<Variable, EVarParser>;
+using VarSeq = basic_VarSeq<Variable, EVarParser, EVarInfo>;
