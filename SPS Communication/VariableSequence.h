@@ -93,6 +93,15 @@ public:
 		else
 			throw Logger("Db not found in message.");
 
+		uint8_t bool_data = 0;
+		size_t bool_shift = 0;
+		auto bool_store = [this, &bool_data, &bool_shift]() mutable 
+		{
+			underlying()->emplace_back(Variable::BOOL);
+			underlying()->back().template fill_var<int8_t>(bool_data);
+			bool_shift = 0;
+			bool_data = 0;
+		};
 		while (!p.at_end())
 		{
 			Variable::Type typ;
@@ -101,39 +110,51 @@ public:
 			else
 				throw Logger("Variable type missing.");
 
-			if (typ != Variable::BOOL || Variable::boolean_end())
-				underlying()->emplace_back(typ),
-				Variable::boolean_reset();
 
-			switch (typ)
-			{						
-			case Variable::CHAR:
-			case Variable::BYTE:
-			case Variable::BOOL:
-				underlying()->back().template set<int8_t>(_get_val_<int8_t>(p));
-				break;
+			if (typ == Variable::BOOL)
+			{
+				bool_data |= _get_val_<int8_t>(p) << bool_shift++;
 
-			case Variable::INT:
-			case Variable::WORD:
-				underlying()->back().template set<int16_t>(_get_val_<int16_t>(p));
-				break;
+				if (bool_shift == 8)
+					bool_store();
+			}
+			else
+			{
+				if (bool_shift != 0)
+					bool_store();
 
-			case Variable::DINT:
-			case Variable::DWORD:
-				underlying()->back().template set<int32_t>(_get_val_<int32_t>(p));
-				break;
+				underlying()->emplace_back(typ);
 
-			case Variable::REAL:
-				underlying()->back().template set<float>(_get_val_<float>(p));
-				break;
+				switch (typ)
+				{
+				case Variable::CHAR:
+				case Variable::BYTE:
+					underlying()->back().template fill_var<int8_t>(_get_val_<int8_t>(p));
+					break;
 
-			default:
-				throw Logger("Undefinied type.");
-				break;
+				case Variable::INT:
+				case Variable::WORD:
+					underlying()->back().template fill_var<int16_t>(_get_val_<int16_t>(p));
+					break;
+
+				case Variable::DINT:
+				case Variable::DWORD:
+					underlying()->back().template fill_var<int32_t>(_get_val_<int32_t>(p));
+					break;
+
+				case Variable::REAL:
+					underlying()->back().template fill_var<float>(_get_val_<float>(p));
+					break;
+
+				default:
+					throw Logger("Undefinied type.");
+					break;
+				}
 			}
 		}
 
-		Variable::boolean_reset();
+		if (bool_shift != 0)
+			bool_store();
 	}
 
 private:
