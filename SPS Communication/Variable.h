@@ -7,7 +7,7 @@ class Variable
 {
 public:
 	enum Type { BOOL, BYTE, WORD, DWORD, CHAR, INT, DINT, REAL, MAX };
-	static constexpr std::array<size_t, MAX> TYPE_SIZE = { 1, 8, 16, 32, 8, 16, 32, 32 };
+	static constexpr std::array<size_t, MAX> TYPE_SIZE = { 1, 1, 2, 4, 1, 2, 4, 4 };
 
 	Variable(Type t)
 		: m_type(t)

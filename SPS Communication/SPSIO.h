@@ -43,7 +43,7 @@ public:
 	SPSReadRequest(daveConnection* c)
 		: ISPSRequest(c)
 	{
-		davePrepareReadRequest(c, &m_p);
+		//davePrepareReadRequest(c, &m_p);
 	}
 
 	void add_vars(int db, int len)
@@ -55,7 +55,7 @@ public:
 
 		m_curr_size += len;
 
-		daveAddVarToReadRequest(&m_p, daveDB, db, 0, len);
+		//daveAddVarToReadRequest(&m_p, daveDB, db, 0, len);
 	}
 
 	void send()
@@ -81,7 +81,7 @@ public:
 	SPSWriteRequest(daveConnection* c)
 		: ISPSRequest(c)
 	{
-		davePrepareWriteRequest(c, &m_p);
+		//davePrepareWriteRequest(c, &m_p);
 	}
 
 	void add_vars(int db, const std::vector<uint8_t>& arr)
@@ -93,7 +93,7 @@ public:
 
 		m_curr_size += arr.size();
 
-		daveAddVarToWriteRequest(&m_p, daveDB, db, 0, arr.size(), const_cast<uint8_t*>(arr.data()));
+		//daveAddVarToWriteRequest(&m_p, daveDB, db, 0, arr.size(), const_cast<uint8_t*>(arr.data()));
 	}
 
 	void send()

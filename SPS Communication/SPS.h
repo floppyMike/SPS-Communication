@@ -88,8 +88,10 @@ public:
 
 		ReadSession read(underlying()->connection_ptr());
 
-		for (int curr_len = std::clamp(len, 0, ReadSession::PDU_READ_LIMIT); len > 0; curr_len = std::clamp(len, 0, ReadSession::PDU_READ_LIMIT))
+		while (len > 0)
 		{
+			const auto curr_len = std::clamp(len, 0, ReadSession::PDU_READ_LIMIT);
+
 			read.add_vars(db, curr_len);
 			len -= curr_len;
 		}
@@ -109,7 +111,7 @@ public:
 
 		for (auto& i : vars)
 		{
-			if (vars.size() + i.byte_size() >= WriteSession::PDU_WRITE_LIMIT)
+			if (arr.size() + i.byte_size() >= WriteSession::PDU_WRITE_LIMIT)
 			{
 				write.add_vars(vars.db(), arr);
 				arr.clear();
@@ -117,6 +119,7 @@ public:
 
 			arr.insert(arr.end(), i.data().begin(), i.data().end());
 		}
+		write.add_vars(vars.db(), arr);
 
 		write.send();
 		return write.results();

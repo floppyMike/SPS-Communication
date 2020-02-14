@@ -44,7 +44,7 @@ public:
 
 	size_t total_byte_size() const noexcept
 	{
-		return std::accumulate(underlying()->begin(), underlying()->end(), 0u, [](size_t num, const Variable& i) { return num + i.byte_size(); });
+		return std::accumulate(underlying()->begin(), underlying()->end(), 0u, [](size_t num, const auto& i) { return num + i.byte_size(); });
 	}
 
 private:
