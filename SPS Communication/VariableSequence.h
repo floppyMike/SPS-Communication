@@ -92,7 +92,8 @@ public:
 				arr.back() |= i.data().front() << bool_skip.val++;
 			}
 			else
-				arr.insert(arr.end(), i.data().begin(), i.data().end());
+				arr.insert(arr.end(), i.data().begin(), i.data().end()),
+				bool_skip.val = 0;
 		}
 
 		return arr;

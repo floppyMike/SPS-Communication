@@ -24,6 +24,7 @@ public:
 	{
 		m_data.resize(sizeof(T));
 		*reinterpret_cast<T*>(&m_data.front()) = val;
+		std::reverse(m_data.begin(), m_data.end());
 	}
 
 	void fill_var(const std::vector<uint8_t>& val)
