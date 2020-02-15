@@ -166,7 +166,7 @@ private:
 		if (const auto res = p.get_num<T>('!'); res.has_value())
 			return res.value();
 		else
-			throw Logger("Variable value missing.");
+			throw Logger("Variable value missing or value too large.");
 	}
 };
 

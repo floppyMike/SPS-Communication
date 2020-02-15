@@ -8,7 +8,7 @@
 #include "AuthElement.h"
 #include "StateElement.h"
 
-//#define SPS_NOT_AVAILABLE
+#define SPS_NOT_AVAILABLE
 
 std::string get_auth_code(asio::io_context& io)
 {
@@ -64,7 +64,7 @@ int main(int argc, char** argv)
 			"Hello There!\n"
 			"#DATA\n"
 			"[requesttimeout]=>1\n"
-			"[state]=>2!0_1!0_0!1_118!2_5!|3!0_1!0_1!1_1!2_1!3_1!\n"
+			"[state]=>2!7_1.2!0_0!1_300!2_5!|3!0_1!0_1!1_1!2_1!3_1!\n"
 			"#END";
 
 		constexpr std::string_view message_auth =

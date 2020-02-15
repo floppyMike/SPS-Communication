@@ -103,7 +103,7 @@ public:
 	{
 		const auto end = find(delim);
 		T temp;
-		if (end == std::string_view::npos || std::from_chars(&m_data[m_loc], &m_data[end], temp).ec == std::errc::invalid_argument)
+		if (end == std::string_view::npos || std::from_chars(&m_data[m_loc], &m_data[end], temp).ec != std::errc())
 			return std::nullopt;
 
 		m_loc = end + 1;
