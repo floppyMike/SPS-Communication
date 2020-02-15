@@ -47,7 +47,7 @@ int main(int argc, char** argv)
 	{
 #ifndef SPS_NOT_AVAILABLE
 		SPS sps;
-		//sps.connect(argv[1]);
+		sps.connect(argv[1]);
 #endif // SPS_NOT_AVAILABLE
 
 

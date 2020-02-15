@@ -38,7 +38,7 @@ private:
 
 	void _open_socket_(std::string_view port)
 	{
-		m_serial.rfd = openSocket(102, const_cast<char*>("192.168.209.128"));/*::_strdup(port.data());*/
+		m_serial.rfd = openSocket(102, const_cast<char*>("192.168.209.128"));
 		m_serial.wfd = m_serial.rfd;
 
 		if (m_serial.rfd == 0)
