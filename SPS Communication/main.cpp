@@ -8,7 +8,7 @@
 #include "AuthElement.h"
 #include "StateElement.h"
 
-#define SPS_NOT_AVAILABLE
+//#define SPS_NOT_AVAILABLE
 
 std::string get_auth_code(asio::io_context& io)
 {
