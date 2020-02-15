@@ -47,7 +47,7 @@ int main(int argc, char** argv)
 	{
 #ifndef SPS_NOT_AVAILABLE
 		SPS sps;
-		//sps.connect(argv[1]);
+		sps.connect(argv[1]);
 #endif // SPS_NOT_AVAILABLE
 
 
@@ -64,7 +64,7 @@ int main(int argc, char** argv)
 			"Hello There!\n"
 			"#DATA\n"
 			"[requesttimeout]=>1\n"
-			"[state]=>2!0_1!0_1!1_9!|3!0_1!0_1!1_1!2_1!3_1!\n"
+			"[state]=>2!0_1!0_1!0_1!0_1!0_1!0_1!0_1!0_1!0_1!0_1!1_9!|3!0_1!0_1!1_1!2_1!3_1!\n"
 			"#END";
 
 		constexpr std::string_view message_auth =
@@ -98,10 +98,11 @@ int main(int argc, char** argv)
 			state_list.parse(req.data());
 
 #ifndef SPS_NOT_AVAILABLE
-			sps.out<SPSWriteRequest>(state_list.element().front());
+			auto& written_list = state_list.element().front();
+			sps.out<SPSWriteRequest>(written_list.db(), written_list.to_byte_array());
 
-			auto byte_arr = sps.in<SPSReadRequest>(state_list.element().back().db(), state_list.element().back().total_byte_size());
-			state_list.element().back().fill_out(byte_arr);
+			auto& read_list = state_list.element().back();
+			read_list.from_byte_array(sps.in<SPSReadRequest>(read_list.db(), read_list.total_byte_size()));
 #endif // !SPS_NOT_AVAILABLE
 
 			timeout += state_list.timeout();
