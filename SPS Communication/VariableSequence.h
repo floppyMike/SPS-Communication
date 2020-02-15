@@ -11,6 +11,8 @@ class basic_VarSeq : std::vector<_Var>, public Ex<basic_VarSeq<_Var, Ex...>>...
 	using vec_t = std::vector<_Var>;
 
 public:
+	using var_t = _Var;
+
 	enum Type { BOOL, BYTE, WORD, DWORD, CHAR, INT, DINT, REAL, MAX };
 	static constexpr std::array<size_t, MAX> TYPE_SIZE = { 1, 8, 16, 32, 8, 16, 32, 32 };
 
@@ -57,10 +59,12 @@ class EVarByteArray
 	const Impl* underlying() const noexcept { return static_cast<const Impl*>(this); }
 	Impl* underlying() noexcept { return static_cast<Impl*>(this); }
 
+	struct _LoopInt { size_t val : 3; };
+
 public:
 	EVarByteArray() = default;
 
-	void fill_out(const std::vector<uint8_t>& bytes)
+	void from_byte_array(const std::vector<uint8_t>& bytes)
 	{
 		if (underlying()->total_byte_size() != bytes.size())
 			throw Logger("Too many or not enought bytes to fill out from SPS.");
@@ -71,6 +75,27 @@ public:
 			iter_seq->fill_var({ iter_byte, iter_byte_end });
 			iter_byte = iter_byte_end;
 		}
+	}
+
+	auto to_byte_array() const
+	{
+		std::vector<uint8_t> arr;
+
+		_LoopInt bool_skip{ 0 };
+		for (auto& i : *underlying())
+		{
+			if (i.type() == Impl::var_t::BOOL)
+			{
+				if (bool_skip.val == 0)
+					arr.emplace_back();
+
+				arr.back() |= i.data().front() << bool_skip.val++;
+			}
+			else
+				arr.insert(arr.end(), i.data().begin(), i.data().end());
+		}
+
+		return arr;
 	}
 };
 
@@ -93,15 +118,6 @@ public:
 		else
 			throw Logger("Db not found in message.");
 
-		uint8_t bool_data = 0;
-		size_t bool_shift = 0;
-		auto bool_store = [this, &bool_data, &bool_shift]() mutable 
-		{
-			underlying()->emplace_back(Variable::BOOL);
-			underlying()->back().template fill_var<int8_t>(bool_data);
-			bool_shift = 0;
-			bool_data = 0;
-		};
 		while (!p.at_end())
 		{
 			Variable::Type typ;
@@ -111,50 +127,35 @@ public:
 				throw Logger("Variable type missing.");
 
 
-			if (typ == Variable::BOOL)
+			underlying()->emplace_back(typ);
+
+			switch (typ)
 			{
-				bool_data |= _get_val_<int8_t>(p) << bool_shift++;
+			case Variable::BOOL:
+			case Variable::CHAR:
+			case Variable::BYTE:
+				underlying()->back().template fill_var<int8_t>(_get_val_<int8_t>(p));
+				break;
 
-				if (bool_shift == 8)
-					bool_store();
-			}
-			else
-			{
-				if (bool_shift != 0)
-					bool_store();
+			case Variable::INT:
+			case Variable::WORD:
+				underlying()->back().template fill_var<int16_t>(_get_val_<int16_t>(p));
+				break;
 
-				underlying()->emplace_back(typ);
+			case Variable::DINT:
+			case Variable::DWORD:
+				underlying()->back().template fill_var<int32_t>(_get_val_<int32_t>(p));
+				break;
 
-				switch (typ)
-				{
-				case Variable::CHAR:
-				case Variable::BYTE:
-					underlying()->back().template fill_var<int8_t>(_get_val_<int8_t>(p));
-					break;
+			case Variable::REAL:
+				underlying()->back().template fill_var<float>(_get_val_<float>(p));
+				break;
 
-				case Variable::INT:
-				case Variable::WORD:
-					underlying()->back().template fill_var<int16_t>(_get_val_<int16_t>(p));
-					break;
-
-				case Variable::DINT:
-				case Variable::DWORD:
-					underlying()->back().template fill_var<int32_t>(_get_val_<int32_t>(p));
-					break;
-
-				case Variable::REAL:
-					underlying()->back().template fill_var<float>(_get_val_<float>(p));
-					break;
-
-				default:
-					throw Logger("Undefinied type.");
-					break;
-				}
+			default:
+				throw Logger("Undefinied type.");
+				break;
 			}
 		}
-
-		if (bool_shift != 0)
-			bool_store();
 	}
 
 private:

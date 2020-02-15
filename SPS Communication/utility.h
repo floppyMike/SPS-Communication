@@ -2,8 +2,27 @@
 
 #include "Includes.h"
 
-template<typename Iter, typename... Arg>
-bool safe_equal(Iter ptr, Iter must_ptr, size_t size, Arg&&... args)
-{
-	return std::distance(ptr, must_ptr) < size - 1 && std::equal(ptr, ptr + size - 1, std::forward<Arg>(args)...);
-}
+//template<typename _T>
+//class LoopedInt
+//{
+//public:
+//	LoopedInt(_T start, _T end)
+//		: m_val(start)
+//		, m_till(end)
+//	{
+//	}
+//
+//	operator _T()
+//	{
+//		return m_val;
+//	}
+//
+//	_T operator++()
+//	{
+//		if ()
+//	}
+//
+//private:
+//	_T m_val;
+//	_T m_till;
+//};

@@ -78,6 +78,8 @@ class ESPSIO
 	const Impl* underlying() const noexcept { return static_cast<Impl*>(this); }
 	Impl* underlying() noexcept { return static_cast<Impl*>(this); }
 
+	struct _LoopInt { size_t val : 3; };
+
 public:
 	ESPSIO() = default;
 
@@ -100,26 +102,20 @@ public:
 		return read.results();
 	}
 
-	template<typename WriteSession, typename _VarSeq>
-	auto out(const _VarSeq& vars)
+	template<typename WriteSession>
+	auto out(int db, const std::vector<uint8_t>& vars)
 	{
 		assert(!vars.empty());
 
 		WriteSession write(underlying()->connection_ptr());
 
-		std::vector<uint8_t> arr;
-
-		for (auto& i : vars)
+		for (auto iter = &vars.front(); iter != &vars.back();)
 		{
-			if (arr.size() + i.byte_size() >= WriteSession::PDU_WRITE_LIMIT)
-			{
-				write.add_vars(vars.db(), arr);
-				arr.clear();
-			}
+			const auto iter_end = std::clamp(iter + WriteSession::PDU_WRITE_LIMIT, &vars.front(), &vars.back());
 
-			arr.insert(arr.end(), i.data().begin(), i.data().end());
+			write.add_vars(db, { iter, iter_end + 1 });
+			iter = iter_end;
 		}
-		write.add_vars(vars.db(), arr);
 
 		write.send();
 		return write.results();

@@ -14,25 +14,6 @@ public:
 	{
 	}
 
-	//NOTICE: When type is BOOL, previous data is not reset.
-	//template<typename T>
-	//void set(T dat)
-	//{
-	//	if (m_type == BOOL)
-	//	{
-	//		if (bool_dis == 0)
-	//			m_data.emplace_back();
-	//		m_data.back() |= static_cast<uint8_t>(dat) << bool_dis++;
-	//	}
-	//	else
-	//	{
-	//		bool_dis = 0;
-	//		m_data.clear();
-
-	//		fill_var<T>(dat);
-	//	}
-	//}
-
 	auto byte_size() const noexcept 
 	{
 		return TYPE_SIZE[m_type];
@@ -51,6 +32,7 @@ public:
 	}
 
 	const auto& data() const noexcept { return m_data; }
+	const auto& type() const noexcept { return m_type; }
 
 private:
 	std::vector<uint8_t> m_data;
