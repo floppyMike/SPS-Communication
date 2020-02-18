@@ -81,19 +81,31 @@ public:
 	{
 		std::vector<uint8_t> arr;
 
-		_LoopInt bool_skip{ 0 };
-		for (auto& i : *underlying())
+		_LoopInt bool_skip{ 0 };	// Bools are stored in order in 1 byte
+		size_t was_byte = 0;		// Bytes (BOOL, CHAR, BYTE) must be stored evenly
+		for (auto iter_var = underlying()->begin(); iter_var != underlying()->end(); ++iter_var)
 		{
-			if (i.type() == Impl::var_t::BOOL)
+			if (iter_var->type() == Impl::var_t::BOOL)
 			{
 				if (bool_skip.val == 0)
-					arr.emplace_back();
+					arr.emplace_back(),
+					++was_byte;
 
-				arr.back() |= i.data().front() << bool_skip.val++;
+				arr.back() |= iter_var->data().front() << bool_skip.val++;
 			}
 			else
-				arr.insert(arr.end(), i.data().begin(), i.data().end()),
+			{
+				if (iter_var->byte_size() != 1)
+				{
+					if (was_byte & 1)
+						arr.emplace_back();
+				}
+				else
+					++was_byte;
+
+				arr.insert(arr.end(), iter_var->data().begin(), iter_var->data().end());
 				bool_skip.val = 0;
+			}
 		}
 
 		return arr;
