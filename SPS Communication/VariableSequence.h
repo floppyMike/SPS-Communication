@@ -98,7 +98,8 @@ public:
 				if (iter_var->byte_size() != 1)
 				{
 					if (was_byte & 1)
-						arr.emplace_back();
+						arr.emplace_back(),
+						was_byte = 0;
 				}
 				else
 					++was_byte;
