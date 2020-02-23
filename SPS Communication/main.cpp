@@ -13,7 +13,7 @@
 std::string get_auth_code(asio::io_context& io, std::string_view host)
 {
 	basic_Query<EQueryParam, EQueryGET> q;
-	q.host(host).path("/pair.php")
+	q.host(host).path("/news/world/rss.xml")
 		.emplace_parameter("type", "raw");
 
 	for (char test_case = 0; test_case < 3; ++test_case)
@@ -60,7 +60,7 @@ int main(int argc, char** argv)
 
 		asio::io_context io;
 
-		const auto auth_code = get_auth_code(io, argc < 3 ? argv[2] : "SpyderHub");
+		const auto auth_code = get_auth_code(io, argc < 3 ? "SpyderHub" : argv[2]);
 
 		constexpr std::string_view message =
 			"#START\n"
