@@ -1,6 +1,6 @@
 #include "Includes.h"
 #include "Logging.h"
-#include "Server.h"
+#include "Query.h"
 #include "SPS.h"
 #include "SPSIO.h"
 #include "Message.h"
@@ -10,13 +10,17 @@
 
 //#define SPS_NOT_AVAILABLE
 
-std::string get_auth_code(asio::io_context& io)
+std::string get_auth_code(asio::io_context& io, std::string_view host)
 {
+	basic_Query<EQueryParam, EQueryGET> q;
+	q.host(host).path("/news/world/rss.xml")
+		.emplace_parameter("type", "raw");
+
 	for (char test_case = 0; test_case < 3; ++test_case)
 	{
 		try
 		{
-			return query<Session>(io, "localhost", "/data.txt").content; //Soft test
+			return q.query<Session>(io).content; //Soft test
 			//return query<Session>(io, "www.ipdatacorp.com", "/mmurtl/mmurtlv1.pdf").content; //Hard test
 		}
 		catch (const std::exception & e)
@@ -36,9 +40,10 @@ int main(int argc, char** argv)
 {
 	if (argc < 2)
 	{
-		std::cerr << "Usage: <SPS Port> [options]\n"
+		std::cerr << "Usage: <SPS Port> [Host]\n"
 			"\"SPS Port\": Port on which the SPS sits.\n"
-			"\"-d\": Launch application in debug mode.\n";
+			"\"Host\": Server name of Spyderhub.\n";
+			//"\"-d\": Launch application in debug mode.\n";
 
 		return 1;
 	}
@@ -55,8 +60,7 @@ int main(int argc, char** argv)
 
 		asio::io_context io;
 
-		//const auto auth_code = get_auth_code(io);
-		//std::cout << auth_code << '\n';
+		const auto auth_code = get_auth_code(io, argc < 3 ? "SpyderHub" : argv[2]);
 
 		constexpr std::string_view message =
 			"#START\n"
