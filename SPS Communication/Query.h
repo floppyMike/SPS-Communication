@@ -25,7 +25,7 @@ public:
 		g_log.complete();
 
 		g_log.initiate("message reader");
-		const auto message = session.query(host, this->_build_req());
+		const auto message = session.query(this->_build_req(this->_build_para()));
 		g_log.complete();
 
 		return message;
@@ -42,9 +42,9 @@ public:
 	auto& path(std::string_view p) { m_path = p; return *this->underlying(); }
 
 protected:
-	std::string _build_req() const
+	std::string _build_req(std::string_view parameters) const
 	{
-		return std::string("GET ").append(m_path).append("?").append(this->_build_para()).append(" HTTP/1.0\r\nHost: ").append(m_host).append("\r\n\r\n");
+		return std::string("GET ").append(m_path).append("?").append(parameters).append(" HTTP/1.0\r\nHost: ").append(m_host).append("\r\n\r\n");
 	}
 
 	const auto& host() const noexcept { return m_host; }
@@ -64,10 +64,10 @@ public:
 	auto& path(std::string_view p) { m_path = p; return *this->underlying(); }
 
 protected:
-	std::string _build_req() const
+	std::string _build_req(std::string_view parameters) const
 	{
 		return std::string("POST ").append(m_path).append(" HTTP/1.0\r\nHost: ").append(m_host)
-			.append("\r\n").append(this->_build_para()).append("\r\n\r\n");
+			.append("\r\n").append(parameters).append("\r\n\r\n");
 	}
 
 	const auto& host() const noexcept { return m_host; }
