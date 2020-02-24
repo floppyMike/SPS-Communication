@@ -5,8 +5,6 @@
 #include "Parser.h"
 #include "utility.h"
 
-#include "rapidjson/document.h"
-
 template<template<typename> class... Ex>
 class basic_ResponseHandler : public Ex<basic_ResponseHandler<Ex...>>...
 {
@@ -84,35 +82,11 @@ protected:
 	void _handle_data(std::string_view data)
 	{
 		if (m_d.Parse<rapidjson::kParseNumbersAsStringsFlag>(data.data(), data.size()).HasParseError())
-			throw Logger(_handle_err_code_(m_d.GetParseError()));
+			throw Logger(rapidjson::GetParseError_En(m_d.GetParseError()));
 	}
 
 private:
 	rapidjson::Document m_d;
-
-	constexpr std::string_view _handle_err_code_(rapidjson::ParseErrorCode err) const noexcept
-	{
-		switch (err)
-		{
-		case rapidjson::kParseErrorDocumentEmpty:					return "Nothing in #DATA.";
-		case rapidjson::kParseErrorDocumentRootNotSingular:			return "JSON format error: root isn't singular.";
-		case rapidjson::kParseErrorValueInvalid:					return "JSON format error: invalid value.";
-		case rapidjson::kParseErrorObjectMissName:					return "JSON format error: object missing name.";
-		case rapidjson::kParseErrorObjectMissColon:					return "JSON format error: object missing ';'.";
-		case rapidjson::kParseErrorObjectMissCommaOrCurlyBracket:	return "JSON format error: object missing ',' or '{}'.";
-		case rapidjson::kParseErrorArrayMissCommaOrSquareBracket:	return "JSON format error: array missing ',' or '[]'";
-		case rapidjson::kParseErrorStringUnicodeEscapeInvalidHex:	return "JSON format error: invalid unicode escape hex.";
-		case rapidjson::kParseErrorStringEscapeInvalid:				return "JSON format error: invalid escape sequence.";
-		case rapidjson::kParseErrorStringMissQuotationMark:			return "JSON format error: missing '\"'.";
-		case rapidjson::kParseErrorStringInvalidEncoding:			return "JSON format error: string has invalid encoding.";
-		case rapidjson::kParseErrorNumberTooBig:					return "JSON format error: number too big.";
-		case rapidjson::kParseErrorNumberMissFraction:				return "JSON format error: number missing fraction.";
-		case rapidjson::kParseErrorNumberMissExponent:				return "JSON format error: number missing exponent.";
-		case rapidjson::kParseErrorUnspecificSyntaxError:			return "JSON format error: unknow synthax error.";
-		case rapidjson::kParseErrorTermination:						
-		default:													return "JSON format error: unknown error.";
-		}
-	}
 
 };
 

@@ -18,5 +18,8 @@
 #define ASIO_STANDALONE
 #include <asio.hpp>
 
+#include "rapidjson/document.h"
+#include "rapidjson/error/en.h"
+
 using asio::ip::tcp;
 using namespace std::chrono_literals;
