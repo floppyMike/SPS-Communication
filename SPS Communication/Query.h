@@ -52,6 +52,8 @@ protected:
 
 private:
 	std::string m_host, m_path;
+
+	const std::string& _get_() { return m_host; }
 };
 
 template<typename Impl>
