@@ -146,16 +146,14 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="AuthElement.h" />
     <ClInclude Include="Logging.h" />
-    <ClInclude Include="Message.h" />
     <ClInclude Include="Parser.h" />
     <ClInclude Include="Response.h" />
     <ClInclude Include="Query.h" />
     <ClInclude Include="Includes.h" />
+    <ClInclude Include="ServerInterface.h" />
     <ClInclude Include="SPS.h" />
     <ClInclude Include="SPSIO.h" />
-    <ClInclude Include="StateElement.h" />
     <ClInclude Include="utility.h" />
     <ClInclude Include="Variable.h" />
     <ClInclude Include="VariableSequence.h" />
