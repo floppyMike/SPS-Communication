@@ -10,44 +10,94 @@
 
 //#define SPS_NOT_AVAILABLE
 
-std::string get_pair_message(asio::io_context& io, std::string_view host)
+class ServerInterface
 {
-	basic_Query<EQueryParam, EQueryGET> q;
-	q.host(host).path("/news/world/rss.xml")
-		.emplace_parameter("type", "raw");
-
-	for (char test_case = 0; test_case < 3; ++test_case)
+public:
+	ServerInterface(asio::io_context& io, std::string_view host)
+		: m_io(io)
+		, m_host(host)
 	{
-		try
-		{
-			return q.query<Session>(io).content; //Soft test
-			//return query<Session>(io, "www.ipdatacorp.com", "/mmurtl/mmurtlv1.pdf").content; //Hard test
-		}
-		catch (const std::exception & e)
-		{
-			g_log.write("Failed getting authentication code. Error: " + std::string(e.what()) + '\n');
-			if (test_case == 2)
-				throw Logger("");
-			g_log.write(std::string("Trying again... ") + static_cast<char>(test_case + '0' + 1) + " of 3.\n");
-		}
 	}
 
-	return ""; //Will never execute
-}
+	void pair_up()
+	{
+		//Validate and parse response
+		basic_ResponseHandler<EDebugHandler, EDataHandler> r;
+		r.go_through_content(_query_<EGETBuilder>([this](auto& q)
+			{ q.host(m_host).path("/pair.php").emplace_parameter("type", "raw"); }));
 
-auto filter_pair(std::string_view message)
+		//Convert time to seconds
+		if (const auto num = str_to_num<unsigned int>(r.get_var("requesttimeout").GetString()); num.has_value())
+			m_curr_timeout = std::chrono::seconds(num.value());
+		else
+			throw Logger("requesttimeout string unconvertable.");
+
+		//Get authcode
+		m_authcode = r.get_var("authcode").GetString();
+	}
+
+	auto get_request()
+	{
+		//Validate and parse response
+		basic_ResponseHandler<EDebugHandler, EDataHandler> r;
+		r.go_through_content(_query_<EGETBuilder>([this](auto& q)
+			{ q.host(m_host).path("/interact.php").emplace_parameter("type", "raw").emplace_parameter("authcode", m_authcode); }));
+		
+		return std::pair(r.get_var("data").MemberBegin(), r.get_var("data").MemberEnd());
+	}
+
+	auto& host(std::string_view h) noexcept { m_host = h; return *this; }
+	const auto& timeout_dur() const noexcept { return m_curr_timeout; }
+
+private:
+	asio::io_context& m_io;
+
+	std::string_view m_host;		//Must be from main char**
+	std::string m_authcode;
+	std::chrono::seconds m_curr_timeout;
+
+	template<template<typename> class Builder, typename _Prep>
+	std::string _query_(_Prep f)
+	{
+		//Construct query
+		basic_Query<Builder, EParamBuilder> q;
+		f(q);
+
+		//Send query multiple times
+		for (char test_case = 1; test_case <= 3; ++test_case)
+		{
+			try
+			{
+				return q.query<Session>(m_io).content;
+			}
+			catch (const std::exception& e)
+			{
+				g_log.write("Failed getting authentication code. Error: " + std::string(e.what()) + '\n');
+				g_log.write(std::string("Trying again... ") + static_cast<char>(test_case + '0' + 1) + " of 3.\n");
+			}
+		}
+		
+		//Throw error at fail
+		throw Logger("");
+	}
+};
+
+
+class SPSInterface
 {
-	basic_ResponseHandler<EResDebug, EResData> r;
-	r.go_through_content(message);
+public:
+	SPSInterface()
+	{
+	}
 
-	std::chrono::seconds time;
-	if (const auto num = str_to_num<unsigned int>(r.get_var("requesttimeout").GetString()); num.has_value())
-		time = std::chrono::seconds(num.value());
-	else
-		throw Logger("requesttimeout string unconvertable.");
+	void init()
+	{
 
-	return std::pair(r.get_var("authcode").GetString(), time);
-}
+	}
+
+private:
+
+};
 
 
 int main(int argc, char** argv)
@@ -71,8 +121,9 @@ int main(int argc, char** argv)
 #endif // SPS_NOT_AVAILABLE
 
 		asio::io_context io;
+		ServerInterface server(io, argc < 3 ? "SpyderHub" : argv[2]);
 
-		auto [authcode, timeout_dur] = filter_pair(get_pair_message(io, argc < 3 ? "SpyderHub" : argv[2]));
+		server.pair_up();
 
 		constexpr std::string_view message =
 			"#START\n"
@@ -88,13 +139,16 @@ int main(int argc, char** argv)
 			"#DEBUG\n"
 			"Hello There!\n"
 			"#DATA\n"
-			"[requesttimeout]=>1\n"
-			"[authcode]=>123456789asdfghjkl\n"
+			"{"
+			""
+			"}"
 			"#END";
 
-		for (auto [quit, timeout] = std::pair(false, std::chrono::steady_clock::now() + timeout_dur); !quit;)
+		for (auto [quit, timeout] = std::pair(false, std::chrono::steady_clock::now() + server.timeout_dur()); !quit;)
 		{
 			std::this_thread::sleep_until(timeout);
+
+
 		}
 
 //		//Filter through authcode

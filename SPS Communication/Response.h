@@ -53,10 +53,10 @@ private:
 };
 
 template<typename Impl>
-class EResDebug : public crtp<Impl, EResDebug>
+class EDebugHandler : public crtp<Impl, EDebugHandler>
 {
 public:
-	EResDebug() = default;
+	EDebugHandler() = default;
 
 protected:
 	void _handle_debug(std::string_view debug)
@@ -68,10 +68,10 @@ protected:
 
 
 template<typename Impl>
-class EResData : public crtp<Impl, EResData>
+class EDataHandler : public crtp<Impl, EDataHandler>
 {
 public:
-	EResData() = default;
+	EDataHandler() = default;
 
 	auto& get_var(const char* var_name)
 	{

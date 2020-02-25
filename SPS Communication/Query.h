@@ -33,10 +33,10 @@ public:
 };
 
 template<typename Impl>
-class EQueryGET : public crtp<Impl, EQueryGET>
+class EGETBuilder : public crtp<Impl, EGETBuilder>
 {
 public:
-	EQueryGET() = default;
+	EGETBuilder() = default;
 
 	auto& host(std::string_view h) { m_host = h; return *this->underlying(); }
 	auto& path(std::string_view p) { m_path = p; return *this->underlying(); }
@@ -57,10 +57,10 @@ private:
 };
 
 template<typename Impl>
-class EQueryPOST : public crtp<Impl, EQueryPOST>
+class EPOSTBuilder : public crtp<Impl, EPOSTBuilder>
 {
 public:
-	EQueryPOST() = default;
+	EPOSTBuilder() = default;
 
 	auto& host(std::string_view h) { m_host = h; return *this->underlying(); }
 	auto& path(std::string_view p) { m_path = p; return *this->underlying(); }
@@ -80,10 +80,10 @@ private:
 };
 
 template<typename Impl>
-class EQueryParam : public crtp<Impl, EQueryParam>
+class EParamBuilder : public crtp<Impl, EParamBuilder>
 {
 public:
-	EQueryParam() = default;
+	EParamBuilder() = default;
 
 	template<typename... T>
 	auto& emplace_parameter(T&&... p) { m_paras.emplace_back(std::forward<T>(p)...); return *this->underlying(); }
@@ -105,6 +105,23 @@ private:
 	std::vector<Parameter> m_paras;
 };
 
+template<typename Impl>
+class EParamSetter : public crtp<Impl, EParamSetter>
+{
+public:
+	EParamSetter() = default;
+
+	auto& set_parameters(std::string_view parameters) { m_paras = parameters; return *this->underlying(); }
+
+protected:
+	std::string_view _build_para() const
+	{
+		return m_paras;
+	}
+
+private:
+	std::string m_paras;
+};
 
 class Session
 {
