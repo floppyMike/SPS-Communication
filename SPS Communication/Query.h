@@ -20,7 +20,7 @@ public:
 
 		g_log.initiate("connection to host");
 		tcp::resolver r(io);
-		tcp::resolver::query q(this->host(), "http");
+		tcp::resolver::query q(this->host().data(), "http");
 		asio::connect(session.socket(), r.resolve(q));
 		g_log.complete();
 
@@ -44,14 +44,22 @@ public:
 protected:
 	std::string _build_req(std::string_view parameters) const
 	{
-		return std::string("GET ").append(m_path).append("?").append(parameters).append(" HTTP/1.0\r\nHost: ").append(m_host).append("\r\n\r\n");
+		std::string chain("GET ");
+		chain.append(m_path);
+
+		if (!parameters.empty())
+			chain.push_back('?'),
+			chain.append(parameters);
+
+		return chain.append(" HTTP/1.0\r\nHost: ").append(m_host).append("\r\n\r\n");
 	}
 
 	const auto& host() const noexcept { return m_host; }
 	const auto& path() const noexcept { return m_path; }
 
 private:
-	std::string m_host, m_path;
+	std::string_view m_host;
+	std::string m_path;
 
 	const std::string& _get_() { return m_host; }
 };

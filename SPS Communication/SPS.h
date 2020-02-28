@@ -7,12 +7,12 @@
 
 
 template<template<typename> class... Ex>
-class basic_SPS : public Ex<basic_SPS<Ex...>>...
+class basic_SPSConnection : public Ex<basic_SPSConnection<Ex...>>...
 {
 public:
-	basic_SPS() = default;
+	basic_SPSConnection() = default;
 
-	~basic_SPS()
+	~basic_SPSConnection()
 	{
 		daveDisconnectPLC(m_connection);
 		daveDisconnectAdapter(m_interface);
@@ -78,7 +78,7 @@ class ESPSIO
 	const Impl* underlying() const noexcept { return static_cast<Impl*>(this); }
 	Impl* underlying() noexcept { return static_cast<Impl*>(this); }
 
-	struct _LoopInt { size_t val : 3; };
+	struct _LoopInt_ { size_t val : 3; };
 
 public:
 	ESPSIO() = default;
@@ -126,4 +126,4 @@ private:
 };
 
 
-using SPS = basic_SPS<ESPSIO>;
+using SPS = basic_SPSConnection<ESPSIO>;

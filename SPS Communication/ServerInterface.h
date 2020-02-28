@@ -4,75 +4,174 @@
 
 #include "Response.h"
 #include "Query.h"
+#include "VariableSequence.h"
 
-class ServerInterface
-{
+using DataSequences = std::array<basic_VarSeq<Variable>, 2>;
+
+template<template<typename> class... Ex>
+class basic_ServerInterface : public Ex<basic_ServerInterface<Ex...>>...
+{ //Requires: _query, host, _interpret_data
 public:
-	ServerInterface(asio::io_context& io, std::string_view host)
-		: m_io(io)
-		, m_host(host)
-	{
-	}
+	basic_ServerInterface() = default;
 
 	void pair_up()
 	{
 		//Validate and parse response
 		basic_ResponseHandler<EDebugHandler, EDataHandler> r;
-		r.go_through_content(_query_<EGETBuilder>([this](auto& q)
-			{ q.host(m_host).path("/pair.php").emplace_parameter("type", "raw"); }));
+		r.go_through_content(this->_query<EGETBuilder>([this](auto& q)
+			{ q.host(this->host()).path("/pair.php").emplace_parameter("type", "raw"); }));
 
 		//Convert time to seconds
-		if (const auto num = str_to_num<unsigned int>(r.get_var("requesttimeout").GetString()); num.has_value())
+		if (const auto num = str_to_num<unsigned int>(r.get_var("data", "requesttimeout").GetString()); num.has_value())
 			m_curr_timeout = std::chrono::seconds(num.value());
 		else
 			throw Logger("requesttimeout string unconvertable.");
 
 		//Get authcode
-		m_authcode = r.get_var("authcode").GetString();
+		m_authcode = r.get_var("data", "authcode").GetString();
 	}
 
 	auto get_request()
 	{
 		//Validate and parse response
 		basic_ResponseHandler<EDebugHandler, EDataHandler> r;
-		r.go_through_content(_query_<EGETBuilder>([this](auto& q)
-			{ q.host(m_host).path("/interact.php").emplace_parameter("type", "raw").emplace_parameter("authcode", m_authcode); }));
+		r.go_through_content(this->_query<EGETBuilder>([this](auto& q)
+			{ q.host(this->host()).path("/interact.php").emplace_parameter("type", "raw").emplace_parameter("authcode", m_authcode); }));
 
-		return std::pair(r.get_var("data").MemberBegin(), r.get_var("data").MemberEnd());
+		return this->_interpret_data(r.data());
 	}
 
-	auto& host(std::string_view h) noexcept { m_host = h; return *this; }
 	const auto& timeout_dur() const noexcept { return m_curr_timeout; }
 
 private:
-	asio::io_context& m_io;
-
-	std::string_view m_host;		//Must be from main char**
 	std::string m_authcode;
 	std::chrono::seconds m_curr_timeout;
+};
 
+template<typename Impl>
+class EConnector
+{
+	const Impl* underlying() const noexcept { return static_cast<Impl*>(this); }
+	Impl* underlying() noexcept { return static_cast<Impl*>(this); }
+
+public:
+	EConnector() = default;
+
+	auto& io(asio::io_context& i) noexcept { m_io = &i; return *underlying(); }
+
+	const auto& host() const noexcept { return m_host; }
+	auto& host(std::string_view h) noexcept { m_host = h; return *underlying(); }
+
+protected:
 	template<template<typename> class Builder, typename _Prep>
-	std::string _query_(_Prep f)
+	std::string _query(_Prep construct)
 	{
 		//Construct query
 		basic_Query<Builder, EParamBuilder> q;
-		f(q);
+		construct(q);
 
 		//Send query multiple times
 		for (char test_case = 1; test_case <= 3; ++test_case)
 		{
 			try
 			{
-				return q.query<Session>(m_io).content;
+				return q.query<Session>(*m_io).content;
 			}
 			catch (const std::exception & e)
 			{
 				g_log.write("Failed getting authentication code. Error: " + std::string(e.what()) + '\n');
-				g_log.write(std::string("Trying again... ") + static_cast<char>(test_case + '0' + 1) + " of 3.\n");
+				g_log.write(std::string("Trying again... ") + static_cast<char>(test_case + '0') + " of 3.\n");
 			}
 		}
 
 		//Throw error at fail
 		throw Logger("");
+	}
+
+private:
+	asio::io_context* m_io;
+	std::string_view m_host;		//Must be from main char**
+};
+
+
+template<typename Impl>
+class EDataIntepreter
+{
+	enum DB_Type { REMOTE, LOCAL };
+
+public:
+	EDataIntepreter() = default;
+
+protected:
+	std::optional<DataSequences> _interpret_data(const rapidjson::Document& dat)
+	{
+		DataSequences seqs;
+		int var, perm;
+
+		if (const auto found = _db_exists_(dat["settings"]); found.has_value())
+			std::tie(var, perm) = _db_num_(found.value());
+		else
+			return std::nullopt;
+
+		auto& sec = dat["data"];
+
+		//Insert to var sequence
+		for (auto iter_var = sec.MemberBegin(), end = sec.MemberEnd(); iter_var != end; ++iter_var)
+		{
+			if (!iter_var->name.IsString() && !iter_var->value.IsString())
+				throw Logger("A data value isn't valid.");
+
+			Parser p;
+			p.data(iter_var->name.GetString());
+
+			//Get type
+			DB_Type typ;
+			if (const auto val = p.get_num<int>('_'); val.has_value())
+				if (val.value() == var)
+					typ = REMOTE;
+				else if (val.value() == perm)
+					typ = LOCAL;
+				else
+				{
+					g_log.write("Non existant db given: " + std::string(val.value()) + " -> Ignoring.");
+					continue;
+				}
+			else
+				throw Logger("Db number isn't readable.");
+
+			if (const auto val = p.get_until('_'); val.has_value())
+			{
+				using var_t = decltype()
+			}
+			
+		}
+	}
+
+private:
+	auto _db_exists_(rapidjson::Value&& sub)
+		-> std::optional<std::pair<rapidjson::Value::MemberIterator, rapidjson::Value::MemberIterator>>
+	{
+		const auto var_loc = sub.FindMember("var"), perm_loc = sub.FindMember("perm");
+		if (var_loc != sub.MemberEnd() && perm_loc != sub.MemberEnd())
+			return std::nullopt;
+
+		return std::pair(var_loc, perm_loc);
+	}
+
+	template<typename Iter>
+	std::pair<int, int> _db_num_(Iter&& var_loc, Iter&& perm_loc)
+	{
+		if (var_loc->value.IsString() && perm_loc->value.IsString())
+			if (const auto num_var = str_to_num<int>(var_loc->value.GetString()), num_perm = str_to_num<int>(perm_loc->value.GetString()); num_var.has_value() && num_perm.has_value())
+				return { num_var.value(), num_perm.value() };
+			else
+				throw Logger("Settings don't have numbers.");
+		else
+			throw Logger("Setting aren't holding numbers.");
+	}
+
+	auto _create_sequences_()
+	{
+
 	}
 };

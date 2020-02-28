@@ -5,7 +5,8 @@
 #include "Message.h"
 #include "ServerInterface.h"
 
-//#define SPS_NOT_AVAILABLE
+#define SPS_NOT_AVAILABLE
+#define SIMPLE_SERVER
 
 
 class SPSInterface
@@ -46,7 +47,8 @@ int main(int argc, char** argv)
 #endif // SPS_NOT_AVAILABLE
 
 		asio::io_context io;
-		ServerInterface server(io, argc < 3 ? "SpyderHub" : argv[2]);
+		basic_ServerInterface<EDataIntepreter, EConnector> server;
+		server.io(io).host(argc < 3 ? "SpyderHub" : argv[2]);
 
 		server.pair_up();
 
@@ -55,6 +57,8 @@ int main(int argc, char** argv)
 			std::this_thread::sleep_until(timeout);
 
 			const auto data_members = server.get_request();
+
+
 		}
 
 //		//Filter through authcode

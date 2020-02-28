@@ -16,14 +16,17 @@ public:
 
 	void go_through_content(std::string_view message)
 	{
+		//Init parser
 		Parser parser;
 		parser.data(message);
 
+		//Check if #START is present
 		g_log.initiate("#START check");
 		if (!parser.is_same(HEADERS[START]))
 			throw Logger("Missing #START.");
 		g_log.complete();
 
+		//Check if #DEBUG is present and pass to func
 		g_log.initiate("#DEBUG check");
 		if (parser.is_same(HEADERS[DEBUG]))
 			if (const auto temp = parser.get_until('#'); temp.has_value())
@@ -32,6 +35,7 @@ public:
 				throw Logger("Missing #DEBUG message.");
 		g_log.complete();
 
+		//Check if #DATA is present and pass to func
 		g_log.initiate("#DATA extractor");
 		if (!parser.is_same(HEADERS[DATA]))
 			throw Logger("Missing #DATA.");
@@ -42,6 +46,7 @@ public:
 		
 		g_log.complete();
 
+		//Check if #END is present
 		g_log.initiate("#END check");
 		if (!parser.is_same(HEADERS[END]))
 			throw Logger("Missing #END.");
@@ -73,10 +78,15 @@ class EDataHandler : public crtp<Impl, EDataHandler>
 public:
 	EDataHandler() = default;
 
-	auto& get_var(const char* var_name)
+	template<typename... T>
+	auto& get_var(const char* first, T&&... names)
 	{
-		return m_d[var_name];
+		auto* level = &m_d[first];
+		((level = &(*level)[names]), ...);
+		return *level;
 	}
+
+	const auto& data() const noexcept { return m_d; }
 
 protected:
 	void _handle_data(std::string_view data)

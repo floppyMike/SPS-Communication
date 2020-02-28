@@ -13,13 +13,15 @@ class basic_VarSeq : std::vector<_Var>, public Ex<basic_VarSeq<_Var, Ex...>>...
 public:
 	using var_t = _Var;
 
-	enum Type { BOOL, BYTE, WORD, DWORD, CHAR, INT, DINT, REAL, MAX };
-	static constexpr std::array<size_t, MAX> TYPE_SIZE = { 1, 8, 16, 32, 8, 16, 32, 32 };
-
 	basic_VarSeq() = default;
 
+	size_t total_byte_size() const noexcept
+	{
+		return std::accumulate(begin(), end(), 0u, [](size_t num, const auto& i) { return num + i.byte_size(); });
+	}
+
 	const auto& db() const noexcept { return m_db; }
-	void db(int db) noexcept { m_db = db; }
+	auto& db(int db) noexcept { m_db = db; return *this; }
 
 	using vec_t::begin;
 	using vec_t::end;
@@ -35,23 +37,6 @@ private:
 	int m_db;
 };
 
-template<typename Impl>
-class EVarInfo
-{
-	const Impl* underlying() const noexcept { return static_cast<const Impl*>(this); }
-	Impl* underlying() noexcept { return static_cast<Impl*>(this); }
-
-public:
-	EVarInfo() = default;
-
-	size_t total_byte_size() const noexcept
-	{
-		return std::accumulate(underlying()->begin(), underlying()->end(), 0u, [](size_t num, const auto& i) { return num + i.byte_size(); });
-	}
-
-private:
-
-};
 
 template<typename Impl>
 class EVarByteArray
@@ -59,7 +44,7 @@ class EVarByteArray
 	const Impl* underlying() const noexcept { return static_cast<const Impl*>(this); }
 	Impl* underlying() noexcept { return static_cast<Impl*>(this); }
 
-	struct _LoopInt { size_t val : 3; };
+	struct _LoopInt_ { size_t val : 3; };
 
 public:
 	EVarByteArray() = default;
@@ -81,7 +66,7 @@ public:
 	{
 		std::vector<uint8_t> arr;
 
-		_LoopInt bool_skip{ 0 };	// Bools are stored in order in 1 byte
+		_LoopInt_ bool_skip{ 0 };	// Bools are stored in order in 1 byte
 		size_t was_byte = 0;		// Bytes (BOOL, CHAR, BYTE) must be stored evenly
 		for (auto iter_var = underlying()->begin(); iter_var != underlying()->end(); ++iter_var)
 		{

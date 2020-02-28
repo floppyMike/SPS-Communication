@@ -17,7 +17,7 @@ template<typename T>
 std::optional<T> str_to_num(std::string_view str) noexcept
 {
 	T temp;
-	if (str.empty() || std::from_chars(&str.front(), &str.back(), temp).ec != std::errc())
+	if (str.empty() || std::from_chars(str.data(), str.data() + str.size(), temp).ec != std::errc())
 		return std::nullopt;
 	return temp;
 }
