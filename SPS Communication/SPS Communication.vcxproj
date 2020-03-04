@@ -157,6 +157,7 @@
     <ClInclude Include="utility.h" />
     <ClInclude Include="Variable.h" />
     <ClInclude Include="VariableSequence.h" />
+    <ClInclude Include="VarSequences.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

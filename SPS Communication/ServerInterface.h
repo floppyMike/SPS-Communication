@@ -4,9 +4,7 @@
 
 #include "Response.h"
 #include "Query.h"
-#include "VariableSequence.h"
-
-using DataSequences = std::array<basic_VarSeq<Variable>, 2>;
+#include "VarSequences.h"
 
 template<template<typename> class... Ex>
 class basic_ServerInterface : public Ex<basic_ServerInterface<Ex...>>...
@@ -36,7 +34,8 @@ public:
 		//Validate and parse response
 		basic_ResponseHandler<EDebugHandler, EDataHandler> r;
 		r.go_through_content(this->_query<EGETBuilder>([this](auto& q)
-			{ q.host(this->host()).path("/interact.php").emplace_parameter("type", "raw").emplace_parameter("authcode", m_authcode); }));
+			{ q.host(this->host()).path("/data.txt"); }));
+			//{ q.host(this->host()).path("/interact.php").emplace_parameter("type", "raw").emplace_parameter("authcode", m_authcode); }));
 
 		return this->_interpret_data(r.data());
 	}
@@ -93,66 +92,48 @@ private:
 	std::string_view m_host;		//Must be from main char**
 };
 
-
 template<typename Impl>
 class EDataIntepreter
 {
-	enum DB_Type { REMOTE, LOCAL };
-
 public:
 	EDataIntepreter() = default;
 
 protected:
-	std::optional<DataSequences> _interpret_data(const rapidjson::Document& dat)
+	auto _interpret_data(const rapidjson::Document& dat)
+		-> std::optional<DataSequences<basic_VarSeq<Variable, EVarByteArray>>>
 	{
-		DataSequences seqs;
 		int var, perm;
 
-		if (const auto found = _db_exists_(dat["settings"]); found.has_value())
-			std::tie(var, perm) = _db_num_(found.value());
+		if (const auto loc = dat.FindMember("settings"); loc != dat.MemberEnd())
+			if (const auto found = _db_exists_(loc->value); found.has_value())
+				std::tie(var, perm) = _db_num_(found.value().first, found.value().second);
+			else
+				return std::nullopt;
 		else
 			return std::nullopt;
 
+		DataSequences<basic_VarSeq<Variable, EVarByteArray>> seqs(var, perm);
 		auto& sec = dat["data"];
 
 		//Insert to var sequence
+		std::vector<size_t> key[2];
 		for (auto iter_var = sec.MemberBegin(), end = sec.MemberEnd(); iter_var != end; ++iter_var)
 		{
 			if (!iter_var->name.IsString() && !iter_var->value.IsString())
 				throw Logger("A data value isn't valid.");
 
-			Parser p;
-			p.data(iter_var->name.GetString());
-
-			//Get type
-			DB_Type typ;
-			if (const auto val = p.get_num<int>('_'); val.has_value())
-				if (val.value() == var)
-					typ = REMOTE;
-				else if (val.value() == perm)
-					typ = LOCAL;
-				else
-				{
-					g_log.write("Non existant db given: " + std::string(val.value()) + " -> Ignoring.");
-					continue;
-				}
-			else
-				throw Logger("Db number isn't readable.");
-
-			if (const auto val = p.get_until('_'); val.has_value())
-			{
-				using var_t = decltype()
-			}
-			
+			seqs.push_var(iter_var->name.GetString(), iter_var->value.GetString(), key);
 		}
+
+		return seqs;
 	}
 
 private:
-	auto _db_exists_(rapidjson::Value&& sub)
-		-> std::optional<std::pair<rapidjson::Value::MemberIterator, rapidjson::Value::MemberIterator>>
+	auto _db_exists_(const rapidjson::Value& sub)
+		-> std::optional<std::pair<rapidjson::Value::ConstMemberIterator, rapidjson::Value::ConstMemberIterator>>
 	{
 		const auto var_loc = sub.FindMember("var"), perm_loc = sub.FindMember("perm");
-		if (var_loc != sub.MemberEnd() && perm_loc != sub.MemberEnd())
+		if (var_loc == sub.MemberEnd() || perm_loc == sub.MemberEnd())
 			return std::nullopt;
 
 		return std::pair(var_loc, perm_loc);
@@ -170,8 +151,4 @@ private:
 			throw Logger("Setting aren't holding numbers.");
 	}
 
-	auto _create_sequences_()
-	{
-
-	}
 };

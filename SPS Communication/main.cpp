@@ -9,23 +9,6 @@
 #define SIMPLE_SERVER
 
 
-class SPSInterface
-{
-public:
-	SPSInterface()
-	{
-	}
-
-	void init()
-	{
-
-	}
-
-private:
-
-};
-
-
 int main(int argc, char** argv)
 {
 	if (argc < 2)
@@ -50,7 +33,7 @@ int main(int argc, char** argv)
 		basic_ServerInterface<EDataIntepreter, EConnector> server;
 		server.io(io).host(argc < 3 ? "SpyderHub" : argv[2]);
 
-		server.pair_up();
+		//server.pair_up();
 
 		for (auto [quit, timeout] = std::pair(false, std::chrono::steady_clock::now() + server.timeout_dur()); !quit;)
 		{

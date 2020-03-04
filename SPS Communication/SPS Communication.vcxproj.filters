@@ -62,5 +62,8 @@
     <ClInclude Include="ServerInterface.h">
       <Filter>Header Files\Wifi Connection</Filter>
     </ClInclude>
+    <ClInclude Include="VarSequences.h">
+      <Filter>Header Files\Processing</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

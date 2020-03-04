@@ -14,6 +14,10 @@ public:
 	using var_t = _Var;
 
 	basic_VarSeq() = default;
+	basic_VarSeq(int db)
+		: m_db(db)
+	{
+	}
 
 	size_t total_byte_size() const noexcept
 	{
@@ -23,6 +27,7 @@ public:
 	const auto& db() const noexcept { return m_db; }
 	auto& db(int db) noexcept { m_db = db; return *this; }
 
+	using vec_t::assign;
 	using vec_t::begin;
 	using vec_t::end;
 	using vec_t::front;
@@ -30,6 +35,7 @@ public:
 	using vec_t::empty;
 	using vec_t::size;
 	using vec_t::operator[];
+	using vec_t::operator=;
 	using vec_t::emplace_back;
 	using vec_t::push_back;
 
@@ -37,6 +43,26 @@ private:
 	int m_db;
 };
 
+template<typename Impl>
+class EKeySorter : public crtp<Impl, EKeySorter>
+{
+public:
+	EKeySorter() = default;
+
+protected:
+	template<typename Var>
+	void sort(std::vector<size_t>&& key)
+	{
+		std::vector<Var> dat(this->underlying().size());
+		for (auto [iter_key, iter_val] = std::pair(key.begin(), this->underlying().begin()); iter_key != key.end(); ++iter_key, ++iter_val)
+			dat[*iter_key] = *iter_val;
+
+		this->underlying().operator=(std::move(dat));
+	}
+
+private:
+
+};
 
 template<typename Impl>
 class EVarByteArray
@@ -97,76 +123,3 @@ public:
 		return arr;
 	}
 };
-
-template<typename Impl>
-class EVarParser
-{
-	const Impl* underlying() const noexcept { return static_cast<const Impl*>(this); }
-	Impl* underlying() noexcept { return static_cast<Impl*>(this); }
-
-public:
-	EVarParser() = default;
-
-	void parse(std::string_view message)
-	{
-		Parser p;
-		p.data(message);
-
-		if (const auto num = p.get_num<unsigned int>('!'); num.has_value())
-			underlying()->db(num.value());
-		else
-			throw Logger("Db not found in message.");
-
-		while (!p.at_end())
-		{
-			Variable::Type typ;
-			if (const auto res = p.get_num<unsigned int>('_'); res.has_value())
-				typ = static_cast<Variable::Type>(res.value());
-			else
-				throw Logger("Variable type missing.");
-
-
-			underlying()->emplace_back(typ);
-
-			switch (typ)
-			{
-			case Variable::BOOL:
-			case Variable::CHAR:
-			case Variable::BYTE:
-				underlying()->back().template fill_var<int8_t>(_get_val_<int8_t>(p));
-				break;
-
-			case Variable::INT:
-			case Variable::WORD:
-				underlying()->back().template fill_var<int16_t>(_get_val_<int16_t>(p));
-				break;
-
-			case Variable::DINT:
-			case Variable::DWORD:
-				underlying()->back().template fill_var<int32_t>(_get_val_<int32_t>(p));
-				break;
-
-			case Variable::REAL:
-				underlying()->back().template fill_var<float>(_get_val_<float>(p));
-				break;
-
-			default:
-				throw Logger("Undefinied type.");
-				break;
-			}
-		}
-	}
-
-private:
-	template<typename T>
-	T _get_val_(Parser &p)
-	{
-		if (const auto res = p.get_num<T>('!'); res.has_value())
-			return res.value();
-		else
-			throw Logger("Variable value missing or value too large.");
-	}
-};
-
-
-using VarSeq = basic_VarSeq<Variable, EVarParser, EVarInfo, EVarByteArray>;
