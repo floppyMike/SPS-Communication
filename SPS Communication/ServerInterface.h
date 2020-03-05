@@ -16,8 +16,7 @@ public:
 	{
 		//Validate and parse response
 		basic_ResponseHandler<EDebugHandler, EDataHandler> r;
-		r.go_through_content(this->_query<EGETBuilder>([this](auto& q)
-			{ q.host(this->host()).path("/pair.php").emplace_parameter("type", "raw"); }));
+		r.go_through_content(this->_query<EGETBuilder>(this->host(), "/pair.php", Parameter{ "type", "raw" }));
 
 		//Convert time to seconds
 		if (const auto num = str_to_num<unsigned int>(r.get_var("data", "requesttimeout").GetString()); num.has_value())
@@ -33,8 +32,7 @@ public:
 	{
 		//Validate and parse response
 		basic_ResponseHandler<EDebugHandler, EDataHandler> r;
-		r.go_through_content(this->_query<EGETBuilder>([this](auto& q)
-			{ q.host(this->host()).path("/data.txt"); }));
+		r.go_through_content(this->_query<EGETBuilder>(this->host(), "/data.txt"));
 			//{ q.host(this->host()).path("/interact.php").emplace_parameter("type", "raw").emplace_parameter("authcode", m_authcode); }));
 
 		return this->_interpret_data(r.data());
@@ -62,19 +60,18 @@ public:
 	auto& host(std::string_view h) noexcept { m_host = h; return *underlying(); }
 
 protected:
-	template<template<typename> class Builder, typename _Prep>
-	std::string _query(_Prep construct)
+	template<template<typename> class Builder, typename... Args>
+	std::string _query(Args&&... para)
 	{
 		//Construct query
 		basic_Query<Builder, EParamBuilder> q;
-		construct(q);
 
 		//Send query multiple times
 		for (char test_case = 1; test_case <= 3; ++test_case)
 		{
 			try
 			{
-				return q.query<Session>(*m_io).content;
+				return q.query<Session>(*m_io, std::forward<Args>(para)...).content;
 			}
 			catch (const std::exception & e)
 			{

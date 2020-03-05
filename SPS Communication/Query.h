@@ -4,7 +4,7 @@
 #include "utility.h"
 
 
-using Parameter = std::pair<std::string, std::string>;
+using Parameter = std::pair<std::string_view, std::string_view>;
 struct Results { std::string header, content; };
 
 template<template<typename> class... Ex>
@@ -13,23 +13,24 @@ class basic_Query : public Ex<basic_Query<Ex...>>...
 public:
 	basic_Query() = default;
 
-	template<typename session_t>
-	Results query(asio::io_context& io) const
+	template<typename session_t, typename... _Para>
+	Results query(asio::io_context& io, std::string_view host, std::string_view path, _Para&&... parameters) const
 	{
 		session_t session(io);
 
 		g_log.initiate("connection to host");
 		tcp::resolver r(io);
-		tcp::resolver::query q(this->host().data(), "http");
+		tcp::resolver::query q(host.data(), "http");
 		asio::connect(session.socket(), r.resolve(q));
 		g_log.complete();
 
 		g_log.initiate("message reader");
-		const auto message = session.query(this->_build_req(this->_build_para()));
+		const auto message = session.query(this->_build_req(host, path, this->_build_para(parameters...)));
 		g_log.complete();
 
 		return message;
 	}
+
 };
 
 template<typename Impl>
@@ -38,30 +39,18 @@ class EGETBuilder : public crtp<Impl, EGETBuilder>
 public:
 	EGETBuilder() = default;
 
-	auto& host(std::string_view h) { m_host = h; return *this->underlying(); }
-	auto& path(std::string_view p) { m_path = p; return *this->underlying(); }
-
 protected:
-	std::string _build_req(std::string_view parameters) const
+	std::string _build_req(std::string_view host, std::string_view path, std::string_view parameters) const
 	{
 		std::string chain("GET ");
-		chain.append(m_path);
+		chain.append(path);
 
 		if (!parameters.empty())
 			chain.push_back('?'),
 			chain.append(parameters);
 
-		return chain.append(" HTTP/1.0\r\nHost: ").append(m_host).append("\r\n\r\n");
+		return chain.append(" HTTP/1.0\r\nHost: ").append(host).append("\r\n\r\n");
 	}
-
-	const auto& host() const noexcept { return m_host; }
-	const auto& path() const noexcept { return m_path; }
-
-private:
-	std::string_view m_host;
-	std::string m_path;
-
-	const std::string& _get_() { return m_host; }
 };
 
 template<typename Impl>
@@ -70,21 +59,12 @@ class EPOSTBuilder : public crtp<Impl, EPOSTBuilder>
 public:
 	EPOSTBuilder() = default;
 
-	auto& host(std::string_view h) { m_host = h; return *this->underlying(); }
-	auto& path(std::string_view p) { m_path = p; return *this->underlying(); }
-
 protected:
-	std::string _build_req(std::string_view parameters) const
+	std::string _build_req(std::string_view host, std::string_view path, std::string_view parameters) const
 	{
-		return std::string("POST ").append(m_path).append(" HTTP/1.0\r\nHost: ").append(m_host)
+		return std::string("POST ").append(path).append(" HTTP/1.0\r\nHost: ").append(host)
 			.append("\r\n").append(parameters).append("\r\n\r\n");
 	}
-
-	const auto& host() const noexcept { return m_host; }
-	const auto& path() const noexcept { return m_path; }
-
-private:
-	std::string m_host, m_path;
 };
 
 template<typename Impl>
@@ -93,43 +73,22 @@ class EParamBuilder : public crtp<Impl, EParamBuilder>
 public:
 	EParamBuilder() = default;
 
-	template<typename... T>
-	auto& emplace_parameter(T&&... p) { m_paras.emplace_back(std::forward<T>(p)...); return *this->underlying(); }
-
 protected:
-	std::string _build_para() const
+	template<typename... _Para>
+	std::string _build_para(_Para&&... paras) const
 	{
 		std::string str;
 
-		for (const auto& i : m_paras)
-			str += i.first + '=' + i.second + '&';
+		((str += paras.first + '=' + paras.second + '&'), ...);
 
 		if (!str.empty())
 			str.pop_back();
+
 		return str;
 	}
 
-private:
-	std::vector<Parameter> m_paras;
 };
 
-template<typename Impl>
-class EParamSetter : public crtp<Impl, EParamSetter>
-{
-public:
-	EParamSetter() = default;
-
-	auto& set_parameters(std::string_view parameters) { m_paras = parameters; return *this->underlying(); }
-
-protected:
-	std::string_view _build_para() const
-	{
-		return m_paras;
-	}
-
-private:
-	std::string m_paras;
-};
 
 class Session
 {
