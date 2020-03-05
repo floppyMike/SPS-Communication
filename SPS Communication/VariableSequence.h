@@ -49,15 +49,20 @@ class EKeySorter : public crtp<Impl, EKeySorter>
 public:
 	EKeySorter() = default;
 
-protected:
 	template<typename Var>
-	void sort(std::vector<size_t>&& key)
+	void sort(const std::vector<size_t>& key)
 	{
-		std::vector<Var> dat(this->underlying().size());
-		for (auto [iter_key, iter_val] = std::pair(key.begin(), this->underlying().begin()); iter_key != key.end(); ++iter_key, ++iter_val)
+		//Allocate and setup variables
+		std::vector<Var> dat;
+		dat.reserve(this->underlying()->size());
+		for (const auto& i : *this->underlying())
+			dat.emplace_back(i.type());
+
+		//Sort values
+		for (auto [iter_key, iter_val] = std::pair(key.begin(), this->underlying()->begin()); iter_key != key.end(); ++iter_key, ++iter_val)
 			dat[*iter_key] = *iter_val;
 
-		this->underlying().operator=(std::move(dat));
+		*this->underlying() = std::move(dat);
 	}
 
 private:

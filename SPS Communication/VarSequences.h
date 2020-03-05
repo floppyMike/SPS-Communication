@@ -91,14 +91,21 @@
 //	}
 //};
 
+enum DB_Type { REMOTE, LOCAL, MAX };
+
+template<typename VarSeq>
+using VariableSequences = std::array<VarSeq, MAX>;
 
 template<typename VarSeq>
 class Intepreter
 {
 public:
-	enum DB_Type { REMOTE, LOCAL, MAX };
-
 	Intepreter() = default;
+
+	Intepreter(int var, int perm)
+		: m_seqs{ var, perm }
+	{
+	}
 
 	void push_var(std::string_view var, std::string_view val)
 	{
@@ -119,22 +126,25 @@ public:
 		}
 	}
 
-	auto& get() noexcept
+	auto&& give() noexcept
 	{
-		return m_seqs;
+		for (auto [iter_seq, iter_key] = std::pair(m_seqs.begin(), m_key); iter_seq != m_seqs.end(); ++iter_seq, ++iter_key)
+			iter_seq->sort<VarSeq::var_t>(*iter_key);
+
+		return std::move(m_seqs);
 	}
 
 private:
 	std::vector<size_t> m_key[MAX];
-	VarSeq m_seqs[MAX];
+	VariableSequences<VarSeq> m_seqs;
 
 	std::optional<DB_Type> _get_db_type_(Parser& p)
 	{
 		DB_Type typ;
 		if (const auto val = p.get_num<int>('_'); val.has_value())
-			if (val.value() == m_db[REMOTE])
+			if (val.value() == m_seqs[REMOTE].db())
 				typ = REMOTE;
-			else if (val.value() == m_db[LOCAL])
+			else if (val.value() == m_seqs[LOCAL].db())
 				typ = LOCAL;
 			else
 			{
@@ -169,3 +179,4 @@ private:
 			throw Logger("Couldn't read variable type.");
 	}
 };
+

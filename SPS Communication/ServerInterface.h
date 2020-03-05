@@ -100,7 +100,7 @@ public:
 
 protected:
 	auto _interpret_data(const rapidjson::Document& dat)
-		-> std::optional<DataSequences<basic_VarSeq<Variable, EVarByteArray>>>
+		-> std::optional<VariableSequences<basic_VarSeq<Variable, EVarByteArray, EKeySorter>>>
 	{
 		int var, perm;
 
@@ -112,20 +112,21 @@ protected:
 		else
 			return std::nullopt;
 
-		DataSequences<basic_VarSeq<Variable, EVarByteArray>> seqs(var, perm);
+		Intepreter<basic_VarSeq<Variable, EVarByteArray, EKeySorter>> inpret(var, perm);
 		auto& sec = dat["data"];
 
 		//Insert to var sequence
-		std::vector<size_t> key[2];
 		for (auto iter_var = sec.MemberBegin(), end = sec.MemberEnd(); iter_var != end; ++iter_var)
 		{
 			if (!iter_var->name.IsString() && !iter_var->value.IsString())
 				throw Logger("A data value isn't valid.");
 
-			seqs.push_var(iter_var->name.GetString(), iter_var->value.GetString(), key);
+			inpret.push_var(iter_var->name.GetString(), iter_var->value.GetString());
 		}
 
-		return seqs;
+		auto test = inpret.give();
+
+		return test;
 	}
 
 private:
