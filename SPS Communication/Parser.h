@@ -101,12 +101,29 @@ public:
 	template<typename T, typename = typename std::enable_if_t<std::is_arithmetic_v<T>>>
 	std::optional<T> get_num(char delim)
 	{
-		const auto end = find(delim);
-		T temp;
-		if (end == std::string_view::npos || std::from_chars(&m_data[m_loc], &m_data[end], temp).ec != std::errc())
+		if (const auto end = find(delim); end != std::string_view::npos)
+		{
+			const auto temp = str_to_num<T>(m_data.substr(m_loc, end));
+
+			if (temp.has_value())
+				m_loc = end + 1;
+
+			return temp;
+		}
+
+		return std::nullopt;
+	}
+	template<typename T, typename = typename std::enable_if_t<std::is_arithmetic_v<T>>>
+	std::optional<T> get_num()
+	{
+		if (m_loc == m_data.size())
 			return std::nullopt;
 
-		m_loc = end + 1;
+		const auto temp = str_to_num<T>(m_data.substr(m_loc + 1, m_data.size() - m_loc));
+
+		if (temp.has_value())
+			m_loc = m_data.size();
+
 		return temp;
 	}
 

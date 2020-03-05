@@ -8,7 +8,7 @@
 #include <charconv>
 #include <optional>
 #include <numeric>
-#include <any>
+#include <array>
 
 #define BCCWIN
 #include <nodavesimple.h>
@@ -17,6 +17,9 @@
 
 #define ASIO_STANDALONE
 #include <asio.hpp>
+
+#include "rapidjson/document.h"
+#include "rapidjson/error/en.h"
 
 using asio::ip::tcp;
 using namespace std::chrono_literals;
