@@ -4,7 +4,7 @@
 
 #include "Response.h"
 #include "Query.h"
-#include "VarSequences.h"
+#include "Sequencer.h"
 
 template<template<typename> class... Ex>
 class basic_ServerInterface : public Ex<basic_ServerInterface<Ex...>>...
@@ -95,6 +95,8 @@ class EDataIntepreter
 public:
 	EDataIntepreter() = default;
 
+	const auto& timeout() const noexcept { return m_timeout; }
+
 protected:
 	auto _interpret_data(const rapidjson::Document& dat)
 		-> std::optional<VariableSequences<basic_VarSeq<Variable, EVarByteArray>>>
@@ -117,12 +119,22 @@ protected:
 			if (!iter_var->name.IsString() && !iter_var->value.IsString())
 				throw Logger("A data value isn't valid.");
 			else
-				inpret.push_var(iter_var->name.GetString(), iter_var->value.GetString());
+			{
+				const auto name = iter_var->name.GetString();
+
+				if (std::strcmp(name, "timeout") == 0)
+					m_timeout = std::chrono::seconds(guarded_get(str_to_num<size_t>(iter_var->value.GetString()), "timeout value is unreadable."));
+
+				else
+					inpret.push_var(name, iter_var->value.GetString());
+			}
 
 		return inpret.give();
 	}
 
 private:
+	std::chrono::seconds m_timeout;
+
 	auto _db_exists_(const rapidjson::Value& sub)
 		-> std::optional<std::pair<rapidjson::Value::ConstMemberIterator, rapidjson::Value::ConstMemberIterator>>
 	{

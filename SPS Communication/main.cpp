@@ -39,45 +39,17 @@ int main(int argc, char** argv)
 		{
 			std::this_thread::sleep_until(timeout);
 
-			const auto data_members = server.get_request();
+			auto data_members = server.get_request();
 
+#ifndef SPS_NOT_AVAILABLE
+			sps.out<SPSWriteRequest>(data_members.value()[DB_Type::REMOTE].db(), data_members.value()[DB_Type::REMOTE].to_byte_array());
+			data_members.value()[DB_Type::LOCAL].from_byte_array(sps.in<SPSReadRequest>(data_members.value()[DB_Type::LOCAL].db(), data_members.value()[DB_Type::LOCAL].total_byte_size()));
+#endif // SPS_NOT_AVAILABLE
 
+			timeout += server.timeout();
+
+			g_log.seperate();
 		}
-
-//		//Filter through authcode
-//		RequestProcessing curr_req;
-//		curr_req.parse(message_auth);
-//		curr_req.print_debug();
-//
-//		CommandList<AuthElement> auth_list;
-//		auth_list.parse(curr_req.data());
-//
-//		g_log.seperate();
-//
-//		for (auto [quit, timeout] = std::pair(false, std::chrono::steady_clock::now() + auth_list.timeout()); !quit;)
-//		{
-//			std::this_thread::sleep_until(timeout);
-//
-//			RequestProcessing req;
-//			req.parse(message);
-//			req.print_debug();
-//
-//			CommandList<StateElement> state_list;
-//			state_list.parse(req.data());
-//
-//#ifndef SPS_NOT_AVAILABLE
-//			auto& written_list = state_list.element().front();
-//			sps.out<SPSWriteRequest>(written_list.db(), written_list.to_byte_array());
-//
-//			auto& read_list = state_list.element().back();
-//			read_list.from_byte_array(sps.in<SPSReadRequest>(read_list.db(), read_list.total_byte_size()));
-//#endif // !SPS_NOT_AVAILABLE
-//
-//			timeout += state_list.timeout();
-//
-//
-//			g_log.seperate();
-//		}
 	}
 	catch (const std::exception& e)
 	{
