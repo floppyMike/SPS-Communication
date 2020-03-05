@@ -100,7 +100,7 @@ public:
 
 protected:
 	auto _interpret_data(const rapidjson::Document& dat)
-		-> std::optional<VariableSequences<basic_VarSeq<Variable, EVarByteArray, EKeySorter>>>
+		-> std::optional<VariableSequences<basic_VarSeq<Variable, EVarByteArray>>>
 	{
 		int var, perm;
 
@@ -112,21 +112,17 @@ protected:
 		else
 			return std::nullopt;
 
-		Intepreter<basic_VarSeq<Variable, EVarByteArray, EKeySorter>> inpret(var, perm);
+		Sequencer<basic_VarSeq<Variable, EVarByteArray>, EKeyedSorter> inpret(var, perm);
 		auto& sec = dat["data"];
 
 		//Insert to var sequence
 		for (auto iter_var = sec.MemberBegin(), end = sec.MemberEnd(); iter_var != end; ++iter_var)
-		{
 			if (!iter_var->name.IsString() && !iter_var->value.IsString())
 				throw Logger("A data value isn't valid.");
+			else
+				inpret.push_var(iter_var->name.GetString(), iter_var->value.GetString());
 
-			inpret.push_var(iter_var->name.GetString(), iter_var->value.GetString());
-		}
-
-		auto test = inpret.give();
-
-		return test;
+		return inpret.give();
 	}
 
 private:
@@ -144,7 +140,8 @@ private:
 	std::pair<int, int> _db_num_(Iter&& var_loc, Iter&& perm_loc)
 	{
 		if (var_loc->value.IsString() && perm_loc->value.IsString())
-			if (const auto num_var = str_to_num<int>(var_loc->value.GetString()), num_perm = str_to_num<int>(perm_loc->value.GetString()); num_var.has_value() && num_perm.has_value())
+			if (const auto num_var = str_to_num<int>(var_loc->value.GetString()), num_perm = str_to_num<int>(perm_loc->value.GetString()); 
+				num_var.has_value() && num_perm.has_value())
 				return { num_var.value(), num_perm.value() };
 			else
 				throw Logger("Settings don't have numbers.");

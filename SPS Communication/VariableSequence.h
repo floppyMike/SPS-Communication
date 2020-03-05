@@ -44,32 +44,6 @@ private:
 };
 
 template<typename Impl>
-class EKeySorter : public crtp<Impl, EKeySorter>
-{
-public:
-	EKeySorter() = default;
-
-	template<typename Var>
-	void sort(const std::vector<size_t>& key)
-	{
-		//Allocate and setup variables
-		std::vector<Var> dat;
-		dat.reserve(this->underlying()->size());
-		for (const auto& i : *this->underlying())
-			dat.emplace_back(i.type());
-
-		//Sort values
-		for (auto [iter_key, iter_val] = std::pair(key.begin(), this->underlying()->begin()); iter_key != key.end(); ++iter_key, ++iter_val)
-			dat[*iter_key] = *iter_val;
-
-		*this->underlying() = std::move(dat);
-	}
-
-private:
-
-};
-
-template<typename Impl>
 class EVarByteArray
 {
 	const Impl* underlying() const noexcept { return static_cast<const Impl*>(this); }

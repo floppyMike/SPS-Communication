@@ -22,6 +22,15 @@ std::optional<T> str_to_num(std::string_view str) noexcept
 	return temp;
 }
 
+template<typename _T>
+auto guarded_get(std::optional<_T>&& opt, std::string_view message_on_error)
+{
+	if (opt.has_value())
+		return opt.value();
+	else
+		throw Logger(message_on_error);
+}
+
 //template<typename _Typ, typename _Parent>
 //class Getter_Setter
 //{
