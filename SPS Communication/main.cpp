@@ -41,12 +41,14 @@ int main(int argc, char** argv)
 
 			auto data_members = server.get_request();
 
+			timeout += server.timeout();
+
 #ifndef SPS_NOT_AVAILABLE
 			sps.out<SPSWriteRequest>(data_members.value()[DB_Type::REMOTE].db(), data_members.value()[DB_Type::REMOTE].to_byte_array());
 			data_members.value()[DB_Type::LOCAL].from_byte_array(sps.in<SPSReadRequest>(data_members.value()[DB_Type::LOCAL].db(), data_members.value()[DB_Type::LOCAL].total_byte_size()));
 #endif // SPS_NOT_AVAILABLE
 
-			timeout += server.timeout();
+
 
 			g_log.seperate();
 		}
