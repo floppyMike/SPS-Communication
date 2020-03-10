@@ -5,8 +5,9 @@
 #include "Message.h"
 #include "ServerInterface.h"
 
-#define SPS_NOT_AVAILABLE
-#define SIMPLE_SERVER
+//#define SPS_NOT_AVAILABLE
+//#define SIMPLE_SERVER
+
 
 
 int main(int argc, char** argv)
@@ -30,7 +31,7 @@ int main(int argc, char** argv)
 #endif // SPS_NOT_AVAILABLE
 
 		asio::io_context io;
-		basic_ServerInterface<EDataIntepreter, EConnector> server;
+		basic_ServerInterface<EDataIntepreter, EConnectorDEBUG, EJSONConverter> server;
 		server.io(io).host(argc < 3 ? "SpyderHub" : argv[2]);
 
 		//server.pair_up();
@@ -48,7 +49,7 @@ int main(int argc, char** argv)
 			data_members.value()[DB_Type::LOCAL].from_byte_array(sps.in<SPSReadRequest>(data_members.value()[DB_Type::LOCAL].db(), data_members.value()[DB_Type::LOCAL].total_byte_size()));
 #endif // SPS_NOT_AVAILABLE
 
-
+			//server.post_request(data_members.value()[DB_Type::LOCAL]);
 
 			g_log.seperate();
 		}

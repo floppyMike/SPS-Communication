@@ -20,6 +20,8 @@
 
 #include "rapidjson/document.h"
 #include "rapidjson/error/en.h"
+#include "rapidjson/stringbuffer.h"
+#include "rapidjson/writer.h"
 
 using asio::ip::tcp;
 using namespace std::chrono_literals;

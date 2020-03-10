@@ -79,7 +79,7 @@ protected:
 	{
 		std::string str;
 
-		((str += paras.first + '=' + paras.second + '&'), ...);
+		((str += std::string(paras.first) + '=' + std::string(paras.second) + '&'), ...);
 
 		if (!str.empty())
 			str.pop_back();

@@ -66,6 +66,43 @@ public:
 	const auto& data() const noexcept { return m_data; }
 	const auto& type() const noexcept { return m_type; }
 
+	std::string_view type_str() const noexcept { return TYPE_STR[m_type]; }
+	
+	std::string val_str() const
+	{
+		auto dat = m_data;
+		std::reverse(dat.begin(), dat.end());
+
+		switch (m_type)
+		{
+		case Variable::BOOL:
+		case Variable::BYTE:
+			return std::to_string(*reinterpret_cast<const uint8_t*>(&dat.front()));
+
+		case Variable::WORD:
+			return std::to_string(*reinterpret_cast<const uint16_t*>(&dat.front()));
+
+		case Variable::DWORD:
+			return std::to_string(*reinterpret_cast<const uint32_t*>(&dat.front()));
+
+		case Variable::CHAR:
+			return std::to_string(*reinterpret_cast<const int8_t*>(&dat.front()));
+
+		case Variable::INT:
+			return std::to_string(*reinterpret_cast<const int16_t*>(&dat.front()));
+
+		case Variable::DINT:
+			return std::to_string(*reinterpret_cast<const int32_t*>(&dat.front()));
+
+		case Variable::REAL:
+			return std::to_string(*reinterpret_cast<const float*>(&dat.front()));
+
+		default:
+			return "";
+		}
+	}
+
+
 private:
 	std::vector<uint8_t> m_data;
 	Type m_type;
@@ -73,10 +110,7 @@ private:
 	template<typename T>
 	auto _get_num_(std::string_view s)
 	{
-		if (const auto val = str_to_num<T>(s); val.has_value())
-			return val.value();
-		else
-			throw Logger("Value of variable isn't convertable.");
+		return guarded_get(str_to_num<T>(s), "Value of variable isn't convertable.");
 	}
 };
 

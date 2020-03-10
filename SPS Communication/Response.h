@@ -87,6 +87,7 @@ public:
 	}
 
 	const auto& data() const noexcept { return m_d; }
+	auto&& give_data() noexcept { return std::move(m_d); }
 
 protected:
 	void _handle_data(std::string_view data)
