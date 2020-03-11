@@ -4,19 +4,18 @@ Hello There
 #DATA
 {
 	"settings": {
-		"perm": "3",
-		"var": "2"		
+		"perm": "2",
+		"var": "1"		
 	},
 	"data": {
 		"timeout": "2",
-		"3_WORD_0": "76",
-		"3_INT_1": "76",
-		"3_BYTE_3": "76",
-		"2_BOOL_0": "1",
-		"2_BOOL_1": "1",
-		"2_BYTE_3": "244",
-		"2_WORD_4": "76",
-		"2_DWORD_5": "76"
+		"1_WORD_0": "76",
+		"1_INT_1": "76",
+		"1_BYTE_3": "76",
+		"1_INT_2": "76",
+		"2_INT_0": "76",
+		"2_INT_1": "76",
+		"2_BOOL_2": "76"
 	},
 	"usermodifiabledata": ["VarName1", "VarName2"],
 	"friendly": {

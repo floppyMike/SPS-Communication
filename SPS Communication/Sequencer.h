@@ -115,7 +115,12 @@ private:
 
 		//Sort values
 		for (auto [iter_key, iter_val] = std::pair(key.begin(), seq.begin()); iter_key != key.end(); ++iter_key, ++iter_val)
+		{
+			if (*iter_key >= dat.size() - 1)
+				throw Logger("Indexes are wrong.");
+
 			dat[*iter_key] = *iter_val;
+		}
 
 		seq = std::move(dat);
 	}

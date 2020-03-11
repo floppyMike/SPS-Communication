@@ -25,19 +25,28 @@ public:
 		switch (m_type)
 		{
 		case Variable::BOOL:
-		case Variable::CHAR:
 		case Variable::BYTE:
+			fill_var<uint8_t>(_get_num_<uint8_t>(str_val));
+			break;
+
+		case Variable::CHAR:
 			fill_var<int8_t>(_get_num_<int8_t>(str_val));
 			break;
 
-		case Variable::INT:
 		case Variable::WORD:
+			fill_var<uint16_t>(_get_num_<uint16_t>(str_val));
+			break;
+
+		case Variable::INT:
 			fill_var<int16_t>(_get_num_<int16_t>(str_val));
 			break;
 
 		case Variable::DINT:
-		case Variable::DWORD:
 			fill_var<int32_t>(_get_num_<int32_t>(str_val));
+			break;
+
+		case Variable::DWORD:
+			fill_var<uint32_t>(_get_num_<uint32_t>(str_val));
 			break;
 
 		case Variable::REAL:

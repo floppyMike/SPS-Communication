@@ -5,7 +5,7 @@
 #include "Message.h"
 #include "ServerInterface.h"
 
-//#define SPS_NOT_AVAILABLE
+#define SPS_NOT_AVAILABLE
 //#define SIMPLE_SERVER
 
 
