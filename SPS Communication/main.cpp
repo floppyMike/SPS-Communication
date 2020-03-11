@@ -54,6 +54,10 @@ int main(int argc, char** argv)
 			g_log.seperate();
 		}
 	}
+	catch (const Logger& e)
+	{
+		std::cerr << e.what() << '\n';
+	}
 	catch (const std::exception& e)
 	{
 		std::cerr << e.what() << '\n';

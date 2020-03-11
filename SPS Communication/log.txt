@@ -1,0 +1,5 @@
+Indexes are wrong.Initiating #START check...Done
+Initiating #DEBUG check...DEBUG: Hello There
+Done
+Initiating #DATA extractor...Done
+Initiating #END check...Done
