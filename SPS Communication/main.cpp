@@ -44,6 +44,10 @@ int main(int argc, char** argv)
 
 			timeout += server.timeout();
 
+			std::cout << data_members.value()[DB_Type::REMOTE] << "\n\n";
+
+			auto temp = data_members.value()[DB_Type::REMOTE].to_byte_array();
+
 #ifndef SPS_NOT_AVAILABLE
 			sps.out<SPSWriteRequest>(data_members.value()[DB_Type::REMOTE].db(), data_members.value()[DB_Type::REMOTE].to_byte_array());
 			data_members.value()[DB_Type::LOCAL].from_byte_array(sps.in<SPSReadRequest>(data_members.value()[DB_Type::LOCAL].db(), data_members.value()[DB_Type::LOCAL].total_byte_size()));
@@ -53,10 +57,6 @@ int main(int argc, char** argv)
 
 			g_log.seperate();
 		}
-	}
-	catch (const Logger& e)
-	{
-		std::cerr << e.what() << '\n';
 	}
 	catch (const std::exception& e)
 	{

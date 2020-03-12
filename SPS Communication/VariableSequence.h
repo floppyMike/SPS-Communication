@@ -39,6 +39,14 @@ public:
 	using vec_t::emplace_back;
 	using vec_t::push_back;
 
+	friend std::ostream& operator<<(std::ostream& o, const basic_VarSeq& v)
+	{
+		for (const auto& i : v)
+			o << i << '\n';
+
+		return o;
+	}
+
 private:
 	int m_db;
 };

@@ -111,6 +111,15 @@ public:
 		}
 	}
 
+	friend std::ostream& operator<<(std::ostream& o, const Variable& v)
+	{
+		o << "Type: " << v.type_str() << "\t Value: " << v.val_str() << "\t Bytes: ";
+
+		for (const auto& i : v.m_data)
+			o << std::hex << +i << ' ';
+
+		return o;
+	}
 
 private:
 	std::vector<uint8_t> m_data;
