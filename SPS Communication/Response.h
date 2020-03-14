@@ -20,41 +20,46 @@ public:
 		Parser parser;
 		parser.data(message);
 
-		//Check if #START is present
-		g_log.initiate("#START check");
-		if (!parser.is_same(HEADERS[START]))
-			throw Logger("Missing #START.");
-		g_log.complete();
-
-		//Check if #DEBUG is present and pass to func
-		g_log.initiate("#DEBUG check");
-		if (parser.is_same(HEADERS[DEBUG]))
-			if (const auto temp = parser.get_until('#'); temp.has_value())
-				this->_handle_debug(temp.value());
-			else
-				throw Logger("Missing #DEBUG message.");
-		g_log.complete();
-
-		//Check if #DATA is present and pass to func
-		g_log.initiate("#DATA extractor");
-		if (!parser.is_same(HEADERS[DATA]))
-			throw Logger("Missing #DATA.");
-		if (const auto temp = parser.get_until('#'); temp.has_value())
-			this->_handle_data(temp.value());
-		else
-			throw Logger("Missing #DATA message.");
-		
-		g_log.complete();
-
-		//Check if #END is present
-		g_log.initiate("#END check");
-		if (!parser.is_same(HEADERS[END]))
-			throw Logger("Missing #END.");
-		g_log.complete();
+		_check_start_(parser);
+		_check_debug_(parser);
+		_check_data_(parser);
+		_check_end_(parser);
 	}
 
 private:
 
+	void _check_start_(Parser& p)
+	{
+		g_log.initiate("#START check");
+		if (!p.is_same(HEADERS[START]))
+			throw Logger("Missing #START.");
+		g_log.complete();
+	}
+
+	void _check_debug_(Parser& p)
+	{
+		g_log.initiate("#DEBUG check");
+		if (p.is_same(HEADERS[DEBUG]))
+			this->_handle_debug(guarded_get(p.get_until('#'), "Missing #DEBUG message."));
+		g_log.complete();
+	}
+
+	void _check_data_(Parser& p)
+	{
+		g_log.initiate("#DATA extractor");
+		if (!p.is_same(HEADERS[DATA]))
+			throw Logger("Missing #DATA.");
+		this->_handle_data(guarded_get(p.get_until('#'), "Missing #DATA message."));
+		g_log.complete();
+	}
+
+	void _check_end_(Parser& p)
+	{
+		g_log.initiate("#END check");
+		if (!p.is_same(HEADERS[END]))
+			throw Logger("Missing #END.");
+		g_log.complete();
+	}
 };
 
 template<typename Impl>

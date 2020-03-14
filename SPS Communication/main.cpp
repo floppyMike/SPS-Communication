@@ -1,3 +1,11 @@
+/*
+To Do
+- fix SPS not writing data bug
+- make the code less confusing!
+- improve memory by limiting variable alloc to 4 bytes
+*/
+
+
 #include "Includes.h"
 #include "Logging.h"
 #include "SPS.h"
