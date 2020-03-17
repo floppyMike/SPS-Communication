@@ -16,21 +16,20 @@ public:
 	{
 		//Validate and parse response
 		basic_ResponseHandler<EDebugHandler, EDataHandler> r;
-		r.go_through_content(this->_query<EGETBuilder>(this->host(), "/pair.php", Parameter{ "type", "raw" }));
+		r.go_through_content(this->template _query<EGETBuilder>(this->host(), "/pair.txt", Parameter{ "type", "raw" }));
 
 		//Convert time to seconds
-		m_curr_timeout = std::chrono::seconds(guarded_get(str_to_num<unsigned int>(r.get_var("data", "requesttimeout").GetString()), "requesttimeout string unconvertable."));
+		m_curr_timeout = std::chrono::seconds(guarded_get(str_to_num<unsigned int>(safe_string_extract(r.get_var("data", "requesttimeout"))), "requesttimeout string unconvertable."));
 
 		//Get authcode
-		m_authcode = r.get_var("data", "authcode").GetString();
+		m_authcode = safe_string_extract(r.get_var("data", "authcode"));
 	}
 
 	auto get_request()
 	{
 		//Validate and parse response
 		basic_ResponseHandler<EDebugHandler, EDataHandler> r;
-		r.go_through_content(this->_query<EGETBuilder>(this->host(), "/data.txt"));
-			//{ q.host(this->host()).path("/interact.php").emplace_parameter("type", "raw").emplace_parameter("authcode", m_authcode); }));
+		r.go_through_content(this->template _query<EGETBuilder>(this->host(), "/interact.php", Parameter{ "type", "raw" }, Parameter{ "authcode", m_authcode }));
 
 		auto temp = this->_interpret_data(r.data());
 
@@ -71,27 +70,27 @@ public:
 
 protected:
 	template<template<typename> class Builder, typename... Args>
-	std::string _query(Args&&... para)
+	std::string _query(std::string_view host, std::string_view path, Args&&... para)
 	{
 		//Construct query
 		basic_Query<Builder, EParamBuilder> q;
 
 		//Send query multiple times
-		for (char test_case = 1; test_case <= 3; ++test_case)
+		for (char test_case = 1; test_case <= 5; ++test_case)
 		{
 			try
 			{
-				return q.query<Session>(*m_io, std::forward<Args>(para)...).content;
+				return q.query<Session>(*m_io, host, path, std::forward<Args>(para)...).content;
 			}
-			catch (const std::exception & e)
+			catch (const std::exception& e)
 			{
-				g_log.write("Connection failed. Error: " + std::string(e.what()) + '\n');
-				g_log.write(std::string("Trying again... ") + static_cast<char>(test_case + '0') + " of 3.\n");
+				g_log.write(Logger::Catagory::ERR, e.what());
+				g_log.write(Logger::Catagory::INFO) << "Case: " << +test_case << " of 5";
 			}
 		}
 
 		//Throw error at fail
-		throw Logger("");
+		throw std::exception("Server query failed.");
 	}
 
 private:

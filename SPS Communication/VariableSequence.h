@@ -41,6 +41,8 @@ public:
 
 	friend std::ostream& operator<<(std::ostream& o, const basic_VarSeq& v)
 	{
+		o << "DB: " << v.m_db << '\n';
+
 		for (const auto& i : v)
 			o << i << '\n';
 
@@ -110,3 +112,12 @@ public:
 		return arr;
 	}
 };
+
+auto& operator<<(std::ostream& o, const std::vector<uint8_t>& bytes)
+{
+	for (const auto& i : bytes)
+		o << std::hex << +i << ' ';
+	o.put('\n');
+
+	return o;
+}

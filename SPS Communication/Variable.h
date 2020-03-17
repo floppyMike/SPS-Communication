@@ -126,7 +126,7 @@ private:
 	Type m_type;
 
 	template<typename T>
-	auto _get_num_(std::string_view s)
+	T _get_num_(std::string_view s)
 	{
 		return guarded_get(str_to_num<T>(s), "Value of variable isn't convertable.");
 	}

@@ -54,7 +54,7 @@ private:
 			return LOCAL;
 		else
 		{
-			g_log.write("Non existant db given: " + std::to_string(db_num) + " -> Ignoring.");
+			g_log.write(Logger::Catagory::WARN) << "Non existant db given: " << db_num << " -> Ignoring.";
 			return std::nullopt;
 		}
 	}
@@ -75,7 +75,7 @@ private:
 			}
 
 		if (!was_used)
-			throw Logger("Unknown variable type.");
+			throw std::runtime_error("Unknown variable type.");
 	}
 };
 
@@ -117,7 +117,7 @@ private:
 		for (auto [iter_key, iter_val] = std::pair(key.begin(), seq.begin()); iter_key != key.end(); ++iter_key, ++iter_val)
 		{
 			if (*iter_key >= dat.size())
-				throw Logger("Indexes are wrong.");
+				throw std::runtime_error("Indexes are wrong.");
 
 			dat[*iter_key] = *iter_val;
 		}

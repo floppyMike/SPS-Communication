@@ -18,15 +18,11 @@ public:
 	{
 		session_t session(io);
 
-		g_log.initiate("connection to host");
 		tcp::resolver r(io);
 		tcp::resolver::query q(host.data(), "http");
 		asio::connect(session.socket(), r.resolve(q));
-		g_log.complete();
 
-		g_log.initiate("message reader");
 		const auto message = session.query(this->_build_req(host, path, this->_build_para(parameters...)));
-		g_log.complete();
 
 		return message;
 	}

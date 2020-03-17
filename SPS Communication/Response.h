@@ -16,13 +16,21 @@ public:
 
 	void go_through_content(std::string_view message)
 	{
-		//Init parser
+		g_log.write(Logger::Catagory::INFO) << "Checking message contents with the size of " << message.size();
+
 		Parser parser;
 		parser.data(message);
 
+		g_log.write(Logger::Catagory::INFO, "Checking start");
 		_check_start_(parser);
+
+		g_log.write(Logger::Catagory::INFO, "Handling debug");
 		_check_debug_(parser);
+
+		g_log.write(Logger::Catagory::INFO, "Handling data");
 		_check_data_(parser);
+
+		g_log.write(Logger::Catagory::INFO, "Checking end");
 		_check_end_(parser);
 	}
 
@@ -30,35 +38,27 @@ private:
 
 	void _check_start_(Parser& p)
 	{
-		g_log.initiate("#START check");
 		if (!p.is_same(HEADERS[START]))
 			throw Logger("Missing #START.");
-		g_log.complete();
 	}
 
 	void _check_debug_(Parser& p)
 	{
-		g_log.initiate("#DEBUG check");
 		if (p.is_same(HEADERS[DEBUG]))
 			this->_handle_debug(guarded_get(p.get_until('#'), "Missing #DEBUG message."));
-		g_log.complete();
 	}
 
 	void _check_data_(Parser& p)
 	{
-		g_log.initiate("#DATA extractor");
 		if (!p.is_same(HEADERS[DATA]))
-			throw Logger("Missing #DATA.");
+			throw std::runtime_error("Missing #DATA.");
 		this->_handle_data(guarded_get(p.get_until('#'), "Missing #DATA message."));
-		g_log.complete();
 	}
 
 	void _check_end_(Parser& p)
 	{
-		g_log.initiate("#END check");
 		if (!p.is_same(HEADERS[END]))
-			throw Logger("Missing #END.");
-		g_log.complete();
+			throw std::runtime_error("Missing #END.");
 	}
 };
 
@@ -71,7 +71,7 @@ public:
 protected:
 	void _handle_debug(std::string_view debug)
 	{
-		g_log.write(std::string("DEBUG: ").append(debug));
+		g_log.write(Logger::Catagory::INFO) << "Debug message: " << debug;
 	}
 
 };
@@ -87,7 +87,7 @@ public:
 	auto& get_var(const char* first, T&&... names)
 	{
 		auto* level = &m_d[first];
-		((level = &(*level)[names]), ...);
+		((level = &_get_member_(level, names)), ...);
 		return *level;
 	}
 
@@ -104,5 +104,13 @@ protected:
 private:
 	rapidjson::Document m_d;
 
+
+	auto& _get_member_(rapidjson::Value* v, const char* name)
+	{
+		if (auto mem = v->FindMember(name); mem != v->MemberEnd())
+			return mem->value;
+		else
+			throw std::runtime_error(std::string("Member ") + name + " not found.");
+	}
 };
 

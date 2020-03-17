@@ -10,6 +10,7 @@
 #include <optional>
 #include <numeric>
 #include <array>
+#include <ctime>
 
 #define BCCWIN
 #include <nodavesimple.h>

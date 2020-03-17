@@ -28,7 +28,15 @@ auto guarded_get(std::optional<_T>&& opt, std::string_view message_on_error)
 	if (opt.has_value())
 		return opt.value();
 	else
-		throw Logger(message_on_error);
+		throw std::runtime_error(message_on_error.data());
+}
+
+const char* safe_string_extract(const rapidjson::Value& val)
+{
+	if (val.IsString())
+		return val.GetString();
+	else
+		throw std::runtime_error("String expected at data variable.");
 }
 
 //template<typename _Typ, typename _Parent>
