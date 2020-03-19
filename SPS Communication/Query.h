@@ -8,21 +8,21 @@ using Parameter = std::pair<std::string_view, std::string_view>;
 struct Results { std::string header, content; };
 
 template<template<typename> class... Ex>
-class basic_Query : public Ex<basic_Query<Ex...>>...
+class Query : public Ex<Query<Ex...>>...
 {
 public:
-	basic_Query() = default;
+	Query() = default;
 
-	template<typename session_t, typename... _Para>
-	Results query(asio::io_context& io, std::string_view host, std::string_view path, _Para&&... parameters) const
+	template<typename Session, typename _Array>
+	Results query(asio::io_context& io, std::string_view host, std::string_view path, const _Array& parameters) const
 	{
-		session_t session(io);
+		Session session(io);
 
 		tcp::resolver r(io);
 		tcp::resolver::query q(host.data(), "http");
 		asio::connect(session.socket(), r.resolve(q));
 
-		const auto message = session.query(this->_build_req(host, path, this->_build_para(parameters...)));
+		const auto message = session.query(this->_build_req(host, path, this->_build_para(parameters)));
 
 		return message;
 	}
@@ -45,7 +45,9 @@ protected:
 			chain.push_back('?'),
 			chain.append(parameters);
 
-		return chain.append(" HTTP/1.0\r\nHost: ").append(host).append("\r\n\r\n");
+		chain.append(" HTTP/1.0\r\nHost: ").append(host).append("\r\n\r\n");
+
+		return chain;
 	}
 };
 
@@ -70,12 +72,15 @@ public:
 	EParamBuilder() = default;
 
 protected:
-	template<typename... _Para>
-	std::string _build_para(_Para&&... paras) const
+	template<typename _Array>
+	std::string _build_para(const _Array& para) const
 	{
+		static_assert(!std::is_same_v<Parameter, decltype(para.front())>, "Array must be of Parameters");
+
 		std::string str;
 
-		((str += std::string(paras.first) + '=' + std::string(paras.second) + '&'), ...);
+		for (const auto& i : para)
+			str += std::string(i.first) + '=' + std::string(i.second) + '&';
 
 		if (!str.empty())
 			str.pop_back();

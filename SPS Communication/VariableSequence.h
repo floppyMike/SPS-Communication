@@ -67,7 +67,7 @@ public:
 	void from_byte_array(const std::vector<uint8_t>& bytes)
 	{
 		if (underlying()->total_byte_size() != bytes.size())
-			throw Logger("Too many or not enought bytes to fill out from SPS.");
+			throw std::runtime_error("Too many or not enought bytes to fill out from SPS.");
 
 		for (auto [iter_byte, iter_seq] = std::pair(bytes.begin(), underlying()->begin()); iter_seq != underlying()->end(); ++iter_seq)
 		{

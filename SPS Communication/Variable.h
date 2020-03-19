@@ -54,7 +54,7 @@ public:
 			break;
 
 		default:
-			throw Logger("Undefinied type.");
+			throw std::runtime_error("Undefinied type.");
 			break;
 		}
 	}

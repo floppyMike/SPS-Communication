@@ -6,13 +6,13 @@
 #include "utility.h"
 
 template<template<typename> class... Ex>
-class basic_ResponseHandler : public Ex<basic_ResponseHandler<Ex...>>...
+class ResponseHandler : public Ex<ResponseHandler<Ex...>>...
 {
 public:
 	enum HeaderList { START, DEBUG, DATA, END };
 	static constexpr std::array<std::string_view, 4> HEADERS = { "#START\n", "#DEBUG\n", "#DATA\n", "#END" };
 
-	basic_ResponseHandler() = default;
+	ResponseHandler() = default;
 
 	void go_through_content(std::string_view message)
 	{
@@ -39,7 +39,7 @@ private:
 	void _check_start_(Parser& p)
 	{
 		if (!p.is_same(HEADERS[START]))
-			throw Logger("Missing #START.");
+			throw std::runtime_error("Missing #START.");
 	}
 
 	void _check_debug_(Parser& p)
@@ -86,7 +86,7 @@ public:
 	template<typename... T>
 	auto& get_var(const char* first, T&&... names)
 	{
-		auto* level = &m_d[first];
+		auto* level = &_get_member_(&m_d, first);
 		((level = &_get_member_(level, names)), ...);
 		return *level;
 	}
@@ -98,7 +98,7 @@ protected:
 	void _handle_data(std::string_view data)
 	{
 		if (m_d.Parse<rapidjson::kParseNumbersAsStringsFlag>(data.data(), data.size()).HasParseError())
-			throw Logger(rapidjson::GetParseError_En(m_d.GetParseError()));
+			throw std::runtime_error(rapidjson::GetParseError_En(m_d.GetParseError()));
 	}
 
 private:

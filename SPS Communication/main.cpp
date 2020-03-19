@@ -12,7 +12,6 @@ To Do
 #include "Logging.h"
 #include "SPS.h"
 #include "SPSIO.h"
-#include "Message.h"
 #include "ServerInterface.h"
 
 #define SPS_NOT_AVAILABLE

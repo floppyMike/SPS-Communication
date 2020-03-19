@@ -1,11 +1,7 @@
 #pragma once
 
 #include "Includes.h"
-
-enum DB_Type { REMOTE, LOCAL, MAX };
-
-template<typename VarSeq>
-using VariableSequences = std::array<VarSeq, MAX>;
+#include "ByteArray.h"
 
 template<typename VarSeq, template<typename> class... Ex>
 class Sequencer : public Ex<Sequencer<VarSeq, Ex...>>...

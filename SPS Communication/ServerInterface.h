@@ -15,21 +15,21 @@ public:
 	void pair_up()
 	{
 		//Validate and parse response
-		basic_ResponseHandler<EDebugHandler, EDataHandler> r;
-		r.go_through_content(this->template _query<EGETBuilder>(this->host(), "/pair.txt", Parameter{ "type", "raw" }));
+		ResponseHandler<EDebugHandler, EDataHandler> r;
+		r.go_through_content(this->template _query<EGETBuilder>(this->host(), "/pair.php", std::array{ Parameter{ "type", "raw" } }));
 
-		//Convert time to seconds
-		m_curr_timeout = std::chrono::seconds(guarded_get(str_to_num<unsigned int>(safe_string_extract(r.get_var("data", "requesttimeout"))), "requesttimeout string unconvertable."));
+		m_curr_timeout = std::chrono::seconds(guarded_get(str_to_num<unsigned int>(safe_string_extract(r.get_var("requesttimeout"))), "requesttimeout string unconvertable."));
 
-		//Get authcode
-		m_authcode = safe_string_extract(r.get_var("data", "authcode"));
+		m_authcode = safe_string_extract(r.get_var("authcode"));
 	}
 
 	auto get_request()
 	{
 		//Validate and parse response
-		basic_ResponseHandler<EDebugHandler, EDataHandler> r;
-		r.go_through_content(this->template _query<EGETBuilder>(this->host(), "/interact.php", Parameter{ "type", "raw" }, Parameter{ "authcode", m_authcode }));
+		ResponseHandler<EDebugHandler, EDataHandler> r;
+		r.go_through_content(this->template _query<EGETBuilder>(this->host(), "/interact.php", std::array{ Parameter{ "type", "raw" }, Parameter{ "authcode", m_authcode }, Parameter{ "requesttype", "GET" } }));
+
+		m_curr_timeout = std::chrono::seconds(guarded_get(str_to_num<unsigned int>(safe_string_extract(r.get_var("requesttimeout"))), "requesttimeout string unconvertable."));
 
 		auto temp = this->_interpret_data(r.data());
 
@@ -43,8 +43,8 @@ public:
 	{
 		const auto str = this->_to_json_str(seq);
 
-		this->_query<EPOSTBuilder>(this->host(), "/interact.php", Parameter{ "type", "raw" }, Parameter{ "requesttype", "UPDATE" }, 
-			Parameter{ "authcode", m_authcode }, Parameter{ "state", str });
+		this->_query<EPOSTBuilder>(this->host(), "/interact.php", std::array{ Parameter{ "type", "raw" }, Parameter{ "requesttype", "UPDATE" },
+			Parameter{ "authcode", m_authcode }, Parameter{ "data", str } });
 	}
 
 	const auto& timeout_dur() const noexcept { return m_curr_timeout; }
@@ -69,18 +69,18 @@ public:
 	auto& host(std::string_view h) noexcept { m_host = h; return *underlying(); }
 
 protected:
-	template<template<typename> class Builder, typename... Args>
-	std::string _query(std::string_view host, std::string_view path, Args&&... para)
+	template<template<typename> class Builder, typename _Array>
+	std::string _query(std::string_view host, std::string_view path, const _Array& para)
 	{
 		//Construct query
-		basic_Query<Builder, EParamBuilder> q;
+		Query<Builder, EParamBuilder> q;
 
 		//Send query multiple times
 		for (char test_case = 1; test_case <= 5; ++test_case)
 		{
 			try
 			{
-				return q.query<Session>(*m_io, host, path, std::forward<Args>(para)...).content;
+				return q.query<Session>(*m_io, host, path, para).content;
 			}
 			catch (const std::exception& e)
 			{
@@ -145,8 +145,8 @@ protected:
 	{
 		int var, perm;
 
-		if (const auto loc = dat.FindMember("settings"); loc != dat.MemberEnd())
-			if (const auto found = _db_exists_(loc->value); found.has_value())
+		if (const auto loc_sub = dat.FindMember("settings"); loc_sub != dat.MemberEnd())
+			if (const auto found = _db_exists_(loc_sub->value); found.has_value())
 				std::tie(var, perm) = _db_num_(found.value().first, found.value().second);
 			else
 				return std::nullopt;
@@ -159,7 +159,7 @@ protected:
 		//Insert to var sequence
 		for (auto iter_var = sec.MemberBegin(), end = sec.MemberEnd(); iter_var != end; ++iter_var)
 			if (!iter_var->name.IsString() && !iter_var->value.IsString())
-				throw Logger("A data value isn't valid.");
+				throw std::runtime_error("A data value isn't valid.");
 			else
 			{
 				const auto name = iter_var->name.GetString();
@@ -195,9 +195,9 @@ private:
 				num_var.has_value() && num_perm.has_value())
 				return { num_var.value(), num_perm.value() };
 			else
-				throw Logger("Settings don't have numbers.");
+				throw std::runtime_error("Settings don't have numbers.");
 		else
-			throw Logger("Setting aren't holding numbers.");
+			throw std::runtime_error("Setting aren't holding numbers.");
 	}
 
 };
