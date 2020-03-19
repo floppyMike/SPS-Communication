@@ -1,11 +1,7 @@
 #pragma once
 
 #include "Includes.h"
-
-enum DB_Type { REMOTE, LOCAL, MAX };
-
-template<typename VarSeq>
-using VariableSequences = std::array<VarSeq, MAX>;
+#include "ByteArray.h"
 
 template<typename VarSeq, template<typename> class... Ex>
 class Sequencer : public Ex<Sequencer<VarSeq, Ex...>>...
@@ -34,7 +30,7 @@ public:
 		}
 	}
 
-	auto&& give() noexcept
+	auto&& give()
 	{
 		this->_sort(m_seqs);
 		return std::move(m_seqs);
@@ -54,7 +50,7 @@ private:
 			return LOCAL;
 		else
 		{
-			g_log.write("Non existant db given: " + std::to_string(db_num) + " -> Ignoring.");
+			g_log.write(Logger::Catagory::WARN) << "Non existant db given: " << db_num << " -> Ignoring.";
 			return std::nullopt;
 		}
 	}
@@ -75,7 +71,7 @@ private:
 			}
 
 		if (!was_used)
-			throw Logger("Unknown variable type.");
+			throw std::runtime_error("Unknown variable type.");
 	}
 };
 
@@ -115,7 +111,12 @@ private:
 
 		//Sort values
 		for (auto [iter_key, iter_val] = std::pair(key.begin(), seq.begin()); iter_key != key.end(); ++iter_key, ++iter_val)
+		{
+			if (*iter_key >= dat.size())
+				throw std::runtime_error("Indexes are wrong.");
+
 			dat[*iter_key] = *iter_val;
+		}
 
 		seq = std::move(dat);
 	}

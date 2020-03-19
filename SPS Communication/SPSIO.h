@@ -64,7 +64,7 @@ public:
 
 		m_curr_size = 0;
 		if (auto res = daveExecReadRequest(m_con, &m_p, &m_result.back()); res != 0)
-			throw Logger(daveStrerror(res));
+			throw std::runtime_error(daveStrerror(res));
 	}
 
 	using ISPSRequest::results;
@@ -102,7 +102,7 @@ public:
 
 		m_curr_size = 0;
 		if (auto res = daveExecWriteRequest(m_con, &m_p, &m_result.back()); res != 0)
-			throw Logger(daveStrerror(res));
+			throw std::runtime_error(daveStrerror(res));
 	}
 
 	using ISPSRequest::results;

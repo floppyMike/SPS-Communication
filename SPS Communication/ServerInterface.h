@@ -15,27 +15,36 @@ public:
 	void pair_up()
 	{
 		//Validate and parse response
-		basic_ResponseHandler<EDebugHandler, EDataHandler> r;
-		r.go_through_content(this->_query<EGETBuilder>(this->host(), "/pair.php", Parameter{ "type", "raw" }));
+		ResponseHandler<EDebugHandler, EDataHandler> r;
+		r.go_through_content(this->template _query<EGETBuilder>(this->host(), "/pair.php", std::array{ Parameter{ "type", "raw" } }));
 
-		//Convert time to seconds
-		if (const auto num = str_to_num<unsigned int>(r.get_var("data", "requesttimeout").GetString()); num.has_value())
-			m_curr_timeout = std::chrono::seconds(num.value());
-		else
-			throw Logger("requesttimeout string unconvertable.");
+		m_curr_timeout = std::chrono::seconds(guarded_get(str_to_num<unsigned int>(safe_string_extract(r.get_var("requesttimeout"))), "requesttimeout string unconvertable."));
 
-		//Get authcode
-		m_authcode = r.get_var("data", "authcode").GetString();
+		m_authcode = safe_string_extract(r.get_var("authcode"));
 	}
 
 	auto get_request()
 	{
 		//Validate and parse response
-		basic_ResponseHandler<EDebugHandler, EDataHandler> r;
-		r.go_through_content(this->_query<EGETBuilder>(this->host(), "/data.txt"));
-			//{ q.host(this->host()).path("/interact.php").emplace_parameter("type", "raw").emplace_parameter("authcode", m_authcode); }));
+		ResponseHandler<EDebugHandler, EDataHandler> r;
+		r.go_through_content(this->template _query<EGETBuilder>(this->host(), "/interact.php", std::array{ Parameter{ "type", "raw" }, Parameter{ "authcode", m_authcode }, Parameter{ "requesttype", "GET" } }));
 
-		return this->_interpret_data(r.data());
+		m_curr_timeout = std::chrono::seconds(guarded_get(str_to_num<unsigned int>(safe_string_extract(r.get_var("requesttimeout"))), "requesttimeout string unconvertable."));
+
+		auto temp = this->_interpret_data(r.data());
+
+		this->_store_prev(r.give_data());
+
+		return temp;
+	}
+
+	template<typename VarSeq>
+	void post_request(const VarSeq& seq)
+	{
+		const auto str = this->_to_json_str(seq);
+
+		this->_query<EPOSTBuilder>(this->host(), "/interact.php", std::array{ Parameter{ "type", "raw" }, Parameter{ "requesttype", "UPDATE" },
+			Parameter{ "authcode", m_authcode }, Parameter{ "data", str } });
 	}
 
 	const auto& timeout_dur() const noexcept { return m_curr_timeout; }
@@ -60,33 +69,66 @@ public:
 	auto& host(std::string_view h) noexcept { m_host = h; return *underlying(); }
 
 protected:
-	template<template<typename> class Builder, typename... Args>
-	std::string _query(Args&&... para)
+	template<template<typename> class Builder, typename _Array>
+	std::string _query(std::string_view host, std::string_view path, const _Array& para)
 	{
 		//Construct query
-		basic_Query<Builder, EParamBuilder> q;
+		Query<Builder, EParamBuilder> q;
 
 		//Send query multiple times
-		for (char test_case = 1; test_case <= 3; ++test_case)
+		for (char test_case = 1; test_case <= 5; ++test_case)
 		{
 			try
 			{
-				return q.query<Session>(*m_io, std::forward<Args>(para)...).content;
+				return q.query<Session>(*m_io, host, path, para).content;
 			}
-			catch (const std::exception & e)
+			catch (const std::exception& e)
 			{
-				g_log.write("Failed getting authentication code. Error: " + std::string(e.what()) + '\n');
-				g_log.write(std::string("Trying again... ") + static_cast<char>(test_case + '0') + " of 3.\n");
+				g_log.write(Logger::Catagory::ERR, e.what());
+				g_log.write(Logger::Catagory::INFO) << "Case: " << +test_case << " of 5";
 			}
 		}
 
 		//Throw error at fail
-		throw Logger("");
+		throw std::exception("Server query failed.");
 	}
 
 private:
 	asio::io_context* m_io;
 	std::string_view m_host;		//Must be from main char**
+};
+
+template<typename Impl>
+class EConnectorDEBUG
+{
+	const Impl* underlying() const noexcept { return static_cast<Impl*>(this); }
+	Impl* underlying() noexcept { return static_cast<Impl*>(this); }
+
+public:
+	EConnectorDEBUG() = default;
+
+	auto& io(asio::io_context& i) noexcept { m_io = &i; return *underlying(); }
+
+	const auto& host() const noexcept { return m_host; }
+	auto& host(std::string_view h) noexcept { m_host = h; return *underlying(); }
+
+protected:
+	template<template<typename> class Builder, typename... Args>
+	std::string _query(Args&&... para)
+	{
+		return _debug_filereader_("data.txt");
+	}
+
+private:
+	asio::io_context* m_io;
+	std::string_view m_host;		//Must be from main char**
+
+
+	std::string _debug_filereader_(std::string_view name)
+	{
+		std::ifstream in(name.data(), std::ios::in | std::ios::binary);
+		return (std::stringstream() << in.rdbuf()).str();
+	}
 };
 
 template<typename Impl>
@@ -103,8 +145,8 @@ protected:
 	{
 		int var, perm;
 
-		if (const auto loc = dat.FindMember("settings"); loc != dat.MemberEnd())
-			if (const auto found = _db_exists_(loc->value); found.has_value())
+		if (const auto loc_sub = dat.FindMember("settings"); loc_sub != dat.MemberEnd())
+			if (const auto found = _db_exists_(loc_sub->value); found.has_value())
 				std::tie(var, perm) = _db_num_(found.value().first, found.value().second);
 			else
 				return std::nullopt;
@@ -117,7 +159,7 @@ protected:
 		//Insert to var sequence
 		for (auto iter_var = sec.MemberBegin(), end = sec.MemberEnd(); iter_var != end; ++iter_var)
 			if (!iter_var->name.IsString() && !iter_var->value.IsString())
-				throw Logger("A data value isn't valid.");
+				throw std::runtime_error("A data value isn't valid.");
 			else
 			{
 				const auto name = iter_var->name.GetString();
@@ -153,9 +195,48 @@ private:
 				num_var.has_value() && num_perm.has_value())
 				return { num_var.value(), num_perm.value() };
 			else
-				throw Logger("Settings don't have numbers.");
+				throw std::runtime_error("Settings don't have numbers.");
 		else
-			throw Logger("Setting aren't holding numbers.");
+			throw std::runtime_error("Setting aren't holding numbers.");
 	}
 
+};
+
+template<typename Impl>
+class EJSONConverter
+{
+public:
+	EJSONConverter() = default;
+
+protected:
+	void _store_prev(rapidjson::Document&& v)
+	{
+		m_prev_val = std::move(v);
+	}
+
+	template<typename VarSeq>
+	std::string _to_json_str(const VarSeq& seq)
+	{
+		m_prev_val["data"].RemoveAllMembers();
+
+		auto& data_sec = m_prev_val["data"];
+
+		for (auto [iter_seq, num] = std::pair(seq.begin(), 0u); iter_seq != seq.end(); ++iter_seq, ++num)
+		{
+			const auto name = (std::to_string(seq.db()) + '_').append(iter_seq->type_str()) + '_' + std::to_string(num);
+			const auto val = iter_seq->val_str();
+
+			data_sec.AddMember(rapidjson::Value().SetString(name.c_str(), m_prev_val.GetAllocator()), 
+				rapidjson::Value().SetString(val.c_str(), m_prev_val.GetAllocator()), m_prev_val.GetAllocator());
+		}
+
+		rapidjson::StringBuffer buffer;
+		rapidjson::Writer<decltype(buffer)> w(buffer);
+		m_prev_val.Accept(w);
+
+		return buffer.GetString();
+	}
+
+private:
+	rapidjson::Document m_prev_val;
 };

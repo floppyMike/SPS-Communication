@@ -2,7 +2,6 @@
 
 #include "Includes.h"
 #include "Logging.h"
-#include "Message.h"
 #include "VariableSequence.h"
 
 
@@ -20,10 +19,10 @@ public:
 
 	void connect(std::string_view port, int protocol = daveProtoISOTCP)
 	{
-		g_log.log_func("connection to port", [port, this] { this->_open_socket_(port); });
-		g_log.log_func("interface", [this, protocol] { this->_init_interface_(protocol); });
-		g_log.log_func("adapter", [this] { this->_init_adapter_(); });
-		g_log.log_func("connection to SPS", [this] { this->_init_connection_(); });
+		_open_socket_(port);
+		_init_interface_(protocol);
+		_init_adapter_();
+		_init_connection_();
 	}
 
 	auto* connection_ptr()
@@ -42,7 +41,7 @@ private:
 		m_serial.wfd = m_serial.rfd;
 
 		if (m_serial.rfd == 0)
-			throw Logger("Couldn't open serial port" + std::string(port));
+			throw std::runtime_error("Couldn't open serial port" + std::string(port));
 	}
 
 	void _init_interface_(int protocol)
@@ -60,7 +59,7 @@ private:
 			{
 				daveDisconnectAdapter(m_interface);
 				if (i == 2)
-					throw Logger("Couldn't connect to Adapter.");
+					throw std::runtime_error("Couldn't connect to Adapter.");
 			}
 	}
 
@@ -68,7 +67,7 @@ private:
 	{
 		m_connection = daveNewConnection(m_interface, 2, 0, 0);
 		if (daveConnectPLC(m_connection) != 0)
-			throw Logger("Couldn't connect to PLC.");
+			throw std::runtime_error("Couldn't connect to PLC.");
 	}
 };
 
@@ -86,6 +85,8 @@ public:
 	template<typename ReadSession>
 	auto in(int db, int len)
 	{
+		g_log.write(Logger::Catagory::INFO) << "Reading SPS on db " << db << " with length " << len;
+
 		assert(len != 0);
 
 		ReadSession read(underlying()->connection_ptr());
@@ -105,6 +106,8 @@ public:
 	template<typename WriteSession>
 	auto out(int db, const std::vector<uint8_t>& vars)
 	{
+		g_log.write(Logger::Catagory::INFO) << "Writing into db " << db << " bytes of size " << vars.size();
+
 		assert(!vars.empty());
 
 		WriteSession write(underlying()->connection_ptr());

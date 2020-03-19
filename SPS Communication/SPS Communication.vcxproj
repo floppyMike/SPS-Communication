@@ -146,6 +146,7 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ByteArray.h" />
     <ClInclude Include="Logging.h" />
     <ClInclude Include="Parser.h" />
     <ClInclude Include="Response.h" />
@@ -158,6 +159,9 @@
     <ClInclude Include="Variable.h" />
     <ClInclude Include="VariableSequence.h" />
     <ClInclude Include="Sequencer.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <Text Include="data.txt" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

@@ -1,5 +1,6 @@
 #pragma once
 
+#include <exception>
 #include <iostream>
 #include <string>
 #include <fstream>
@@ -9,6 +10,7 @@
 #include <optional>
 #include <numeric>
 #include <array>
+#include <ctime>
 
 #define BCCWIN
 #include <nodavesimple.h>
@@ -20,6 +22,8 @@
 
 #include "rapidjson/document.h"
 #include "rapidjson/error/en.h"
+#include "rapidjson/stringbuffer.h"
+#include "rapidjson/writer.h"
 
 using asio::ip::tcp;
 using namespace std::chrono_literals;
