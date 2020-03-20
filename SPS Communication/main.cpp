@@ -5,6 +5,7 @@ To Do
 - improve memory by limiting variable alloc to 4 bytes
 - Logging
 - Safer getting String from json
+- friendly section comes from us
 */
 
 

@@ -145,16 +145,19 @@ protected:
 	{
 		int var, perm;
 
-		if (const auto loc_sub = dat.FindMember("settings"); loc_sub != dat.MemberEnd())
-			if (const auto found = _db_exists_(loc_sub->value); found.has_value())
-				std::tie(var, perm) = _db_num_(found.value().first, found.value().second);
+		if (const auto dat_sub = dat.FindMember("data"); dat_sub != dat.MemberEnd())
+			if (const auto loc_sub = dat_sub->value.FindMember("settings"); loc_sub != dat.MemberEnd())
+				if (const auto found = _db_exists_(loc_sub->value); found.has_value())
+					std::tie(var, perm) = _db_num_(found.value().first, found.value().second);
+				else
+					return std::nullopt;
 			else
 				return std::nullopt;
 		else
 			return std::nullopt;
 
 		Sequencer<basic_VarSeq<Variable, EVarByteArray>, EKeyedSorter> inpret(var, perm);
-		auto& sec = dat["data"];
+		auto& sec = dat["data"]["data"];
 
 		//Insert to var sequence
 		for (auto iter_var = sec.MemberBegin(), end = sec.MemberEnd(); iter_var != end; ++iter_var)
@@ -168,7 +171,7 @@ protected:
 					m_timeout = std::chrono::seconds(guarded_get(str_to_num<size_t>(iter_var->value.GetString()), "timeout value is unreadable."));
 
 				else
-					inpret.push_var(name, iter_var->value.GetString());
+					inpret.push_var(name, safe_string_extract(iter_var->value));
 			}
 
 		return inpret.give();
