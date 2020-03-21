@@ -72,6 +72,11 @@ public:
 		m_data = val;
 	}
 
+	void fill_var(std::vector<uint8_t>&& val)
+	{
+		m_data = std::move(val);
+	}
+
 	const auto& data() const noexcept { return m_data; }
 	const auto& type() const noexcept { return m_type; }
 

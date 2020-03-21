@@ -3,7 +3,7 @@
 Hello There
 #DATA
 {
-	"authcode": "assssssssssssssssssssssssssssssss",
+	"authcode": "1234567890",
 	"requesttimeout": "2",
 	"data": {
 		"settings": {
@@ -11,9 +11,14 @@ Hello There
 			"var": "2"		
 		},
 		"data": {
-			"3_WORD_0": "76",
-			"3_INT_1": "76",
-			"3_BYTE_2": "0",
+			"3_BOOL_0": "1",
+			"3_BOOL_1": "0",
+			"3_BYTE_2": "3",
+			"3_WORD_3": "3434",
+			"3_CHAR_4": "3",
+			"3_INT_5": "3",
+			"3_DINT_6": "4",
+			"3_REAL_7": "45.4",
 			"2_BOOL_0": "1",
 			"2_BOOL_1": "0",
 			"2_BYTE_2": "3",

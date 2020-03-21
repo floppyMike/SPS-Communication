@@ -31,7 +31,7 @@ auto guarded_get(std::optional<_T>&& opt, std::string_view message_on_error)
 		throw std::runtime_error(message_on_error.data());
 }
 
-const char* safe_string_extract(const rapidjson::Value& val)
+const char* guarded_get(const rapidjson::Value& val)
 {
 	if (val.IsString())
 		return val.GetString();

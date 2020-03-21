@@ -1,6 +1,5 @@
 /*
 To Do
-- fix SPS not writing data bug
 - make the code less confusing!
 - improve memory by limiting variable alloc to 4 bytes
 - Logging
@@ -15,7 +14,7 @@ To Do
 #include "SPSIO.h"
 #include "ServerInterface.h"
 
-#define SPS_NOT_AVAILABLE
+//#define SPS_NOT_AVAILABLE
 //#define SIMPLE_SERVER
 
 
@@ -36,14 +35,15 @@ int main(int argc, char** argv)
 	std::cout.tie(nullptr);
 
 	asio::io_context io;
-	basic_ServerInterface<EDataIntepreter, EConnector, EJSONConverter> server;
+	ServerInterface<EDataIntepreter, EConnectorDEBUG, EJSONConverter> server;
 	server.io(io).host(argc < 3 ? "SpyderHub" : argv[2]);
+
+	SPS sps;
 
 	try
 	{
 #ifndef SPS_NOT_AVAILABLE
-		g_log.write(Logger::Catagory::INFO) << "Connecting to SPS on port " << port;
-		SPS sps;
+		g_log.write(Logger::Catagory::INFO) << "Connecting to SPS on port " << argv[1];
 		sps.connect(argv[1]);
 #endif // SPS_NOT_AVAILABLE
 
@@ -75,13 +75,14 @@ int main(int argc, char** argv)
 			g_log.write(Logger::Catagory::INFO) << "Variables to be written:\n" << data_members.value()[DB_Type::REMOTE];
 			g_log.write(Logger::Catagory::INFO) << "Variables to be read:\n" << data_members.value()[DB_Type::LOCAL];
 
-			auto temp = data_members.value()[DB_Type::REMOTE].to_byte_array();
-
-			g_log.write(Logger::Catagory::INFO) << "Bytes to be written into SPS:\n" << temp;
+			const auto data_write = data_members.value()[DB_Type::REMOTE].to_byte_array();
+			g_log.write(Logger::Catagory::INFO) << "Bytes to be written to the SPS:\n" << data_write;
 
 #ifndef SPS_NOT_AVAILABLE
-			sps.out<SPSWriteRequest>(data_members.value()[DB_Type::REMOTE].db(), data_members.value()[DB_Type::REMOTE].to_byte_array());
+			sps.out<SPSWriteRequest>(data_members.value()[DB_Type::REMOTE].db(), data_write);
 			data_members.value()[DB_Type::LOCAL].from_byte_array(sps.in<SPSReadRequest>(data_members.value()[DB_Type::LOCAL].db(), data_members.value()[DB_Type::LOCAL].total_byte_size()));
+
+			g_log.write(Logger::Catagory::INFO) << "Variables read from SPS:\n" << data_members.value()[DB_Type::LOCAL];
 #endif // SPS_NOT_AVAILABLE
 
 			server.post_request(data_members.value()[DB_Type::LOCAL]);

@@ -66,14 +66,23 @@ public:
 
 	void from_byte_array(const std::vector<uint8_t>& bytes)
 	{
-		if (underlying()->total_byte_size() != bytes.size())
-			throw std::runtime_error("Too many or not enought bytes to fill out from SPS.");
-
+		_LoopInt_ bool_skip{ 0 };
 		for (auto [iter_byte, iter_seq] = std::pair(bytes.begin(), underlying()->begin()); iter_seq != underlying()->end(); ++iter_seq)
 		{
-			const auto iter_byte_end = iter_byte + iter_seq->byte_size();
-			iter_seq->fill_var({ iter_byte, iter_byte_end });
-			iter_byte = iter_byte_end;
+			if (iter_seq->type() == Impl::var_t::BOOL)
+				iter_seq->fill_var(static_cast<uint8_t>((*iter_byte << bool_skip.val++) & 1));
+			else
+			{
+				if (std::distance(bytes.begin(), iter_byte) & 1 || bool_skip.val != 0)
+					++iter_byte;
+
+				bool_skip.val = 0;
+
+				const auto& type_size = Impl::var_t::TYPE_SIZE[iter_seq->type()];
+
+				iter_seq->fill_var(std::vector(iter_byte, iter_byte + type_size));
+				iter_byte += type_size;
+			}
 		}
 	}
 
@@ -84,7 +93,6 @@ public:
 		_LoopInt_ bool_skip{ 0 };	// Bools are stored in order in 1 byte
 		size_t was_byte = 0;		// Bytes (BOOL, CHAR, BYTE) must be stored evenly
 		for (auto iter_var = underlying()->begin(); iter_var != underlying()->end(); ++iter_var)
-		{
 			if (iter_var->type() == Impl::var_t::BOOL)
 			{
 				if (bool_skip.val == 0)
@@ -107,7 +115,6 @@ public:
 				arr.insert(arr.end(), iter_var->data().begin(), iter_var->data().end());
 				bool_skip.val = 0;
 			}
-		}
 
 		return arr;
 	}

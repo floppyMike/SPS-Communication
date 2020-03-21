@@ -7,10 +7,10 @@
 #include "Sequencer.h"
 
 template<template<typename> class... Ex>
-class basic_ServerInterface : public Ex<basic_ServerInterface<Ex...>>...
+class ServerInterface : public Ex<ServerInterface<Ex...>>...
 { //Requires: _query, host, _interpret_data
 public:
-	basic_ServerInterface() = default;
+	ServerInterface() = default;
 
 	void pair_up()
 	{
@@ -18,9 +18,9 @@ public:
 		ResponseHandler<EDebugHandler, EDataHandler> r;
 		r.go_through_content(this->template _query<EGETBuilder>(this->host(), "/pair.php", std::array{ Parameter{ "type", "raw" } }));
 
-		m_curr_timeout = std::chrono::seconds(guarded_get(str_to_num<unsigned int>(safe_string_extract(r.get_var("requesttimeout"))), "requesttimeout string unconvertable."));
+		m_curr_timeout = std::chrono::seconds(guarded_get(str_to_num<unsigned int>(guarded_get(r.get_var("requesttimeout"))), "requesttimeout string unconvertable."));
 
-		m_authcode = safe_string_extract(r.get_var("authcode"));
+		m_authcode = guarded_get(r.get_var("authcode"));
 	}
 
 	auto get_request()
@@ -29,7 +29,7 @@ public:
 		ResponseHandler<EDebugHandler, EDataHandler> r;
 		r.go_through_content(this->template _query<EGETBuilder>(this->host(), "/interact.php", std::array{ Parameter{ "type", "raw" }, Parameter{ "authcode", m_authcode }, Parameter{ "requesttype", "GET" } }));
 
-		m_curr_timeout = std::chrono::seconds(guarded_get(str_to_num<unsigned int>(safe_string_extract(r.get_var("requesttimeout"))), "requesttimeout string unconvertable."));
+		m_curr_timeout = std::chrono::seconds(guarded_get(str_to_num<unsigned int>(guarded_get(r.get_var("requesttimeout"))), "requesttimeout string unconvertable."));
 
 		auto temp = this->_interpret_data(r.data());
 
@@ -171,7 +171,7 @@ protected:
 					m_timeout = std::chrono::seconds(guarded_get(str_to_num<size_t>(iter_var->value.GetString()), "timeout value is unreadable."));
 
 				else
-					inpret.push_var(name, safe_string_extract(iter_var->value));
+					inpret.push_var(name, guarded_get(iter_var->value));
 			}
 
 		return inpret.give();
