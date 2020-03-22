@@ -3,18 +3,43 @@
 #include "Includes.h"
 #include "Logging.h"
 
-class ISPSRequest
+template<typename FuncPack, template<typename> class... Ex>
+class SPSRequester : public Ex<SPSRequester<FuncPack, Ex...>>...
 {
 public:
-	ISPSRequest(daveConnection* c)
+	static constexpr int PDU_LIMIT = 222;
+
+	SPSRequester(daveConnection* c)
 		: m_con(c)
 	{
+		FuncPack::prep_request(c, &m_p);
 	}
 
-	virtual ~ISPSRequest()
+	virtual ~SPSRequester()
 	{
 		for (auto& i : m_result)
 			daveFreeResults(&i);
+	}
+
+	void add_vars(int db, int len)
+	{
+		_handle_len_(len);
+		FuncPack::add_var(&m_p, db, len);
+	}
+
+	void add_vars(int db, const std::vector<uint8_t>& arr)
+	{
+		_handle_len_(std::size(arr));
+		FuncPack::add_var(&m_p, db, std::size(arr), const_cast<uint8_t*>(&arr.front()));
+	}
+
+	void send()
+	{
+		m_result.resize(m_result.size() + 1);
+
+		m_curr_size = 0;
+		if (auto res = FuncPack::request(m_con, &m_p, &m_result.back()); res != 0)
+			throw std::runtime_error(daveStrerror(res));
 	}
 
 	auto results()
@@ -28,85 +53,64 @@ public:
 		return arr;
 	}
 
-protected:
+private:
 	daveConnection* m_con;
 	PDU m_p;
 
+	int m_curr_size = 0;
+
 	std::vector<daveResultSet> m_result;
-};
 
-class SPSReadRequest : ISPSRequest
-{
-public:
-	static constexpr int PDU_READ_LIMIT = 222;
-
-	SPSReadRequest(daveConnection* c)
-		: ISPSRequest(c)
+	
+	void _handle_len_(int len)
 	{
-		davePrepareReadRequest(c, &m_p);
-	}
+		assert(len <= PDU_LIMIT && "Read request to SPS to large.");
 
-	void add_vars(int db, int len)
-	{
-		assert(len <= PDU_READ_LIMIT && "Read request to SPS to large.");
-
-		if (m_curr_size + len >= PDU_READ_LIMIT)
+		if (m_curr_size + len >= PDU_LIMIT)
 			send();
 
 		m_curr_size += len;
-
-		daveAddVarToReadRequest(&m_p, daveDB, db, 0, len);
 	}
-
-	void send()
-	{
-		m_result.resize(m_result.size() + 1);
-
-		m_curr_size = 0;
-		if (auto res = daveExecReadRequest(m_con, &m_p, &m_result.back()); res != 0)
-			throw std::runtime_error(daveStrerror(res));
-	}
-
-	using ISPSRequest::results;
-
-private:
-	int m_curr_size = 0;
 };
 
-class SPSWriteRequest : ISPSRequest
+class TSPSRead
 {
 public:
-	static constexpr size_t PDU_WRITE_LIMIT = 222;
+	TSPSRead() = delete;
 
-	SPSWriteRequest(daveConnection* c)
-		: ISPSRequest(c)
+	static void prep_request(daveConnection* c, PDU* p)
 	{
-		davePrepareWriteRequest(c, &m_p);
+		davePrepareReadRequest(c, p);
 	}
 
-	void add_vars(int db, const std::vector<uint8_t>& arr)
+	static void add_var(PDU* p, int db, int bytes)
 	{
-		assert(arr.size() <= PDU_WRITE_LIMIT && "Read request to SPS to large.");
-
-		if (m_curr_size + arr.size() >= PDU_WRITE_LIMIT)
-			send();
-
-		m_curr_size += arr.size();
-
-		daveAddVarToWriteRequest(&m_p, daveDB, db, 0, arr.size(), const_cast<uint8_t*>(arr.data()));
+		daveAddVarToReadRequest(p, daveDB, db, 0, bytes);
 	}
 
-	void send()
+	static int request(daveConnection* c, PDU* p, daveResultSet* rs)
 	{
-		m_result.resize(m_result.size() + 1);
+		return daveExecReadRequest(c, p, rs);
+	}
+};
 
-		m_curr_size = 0;
-		if (auto res = daveExecWriteRequest(m_con, &m_p, &m_result.back()); res != 0)
-			throw std::runtime_error(daveStrerror(res));
+class TSPSWrite
+{
+public:
+	TSPSWrite() = delete;
+
+	static void prep_request(daveConnection* c, PDU* p)
+	{
+		davePrepareWriteRequest(c, p);
 	}
 
-	using ISPSRequest::results;
+	static void add_var(PDU* p, int db, int bytes, uint8_t* arr)
+	{
+		daveAddVarToWriteRequest(p, daveDB, db, 0, bytes, arr);
+	}
 
-private:
-	int m_curr_size = 0;
+	static int request(daveConnection* c, PDU* p, daveResultSet* rs)
+	{
+		return daveExecWriteRequest(c, p, rs);
+	}
 };

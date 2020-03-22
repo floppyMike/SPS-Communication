@@ -14,7 +14,7 @@ To Do
 #include "SPSIO.h"
 #include "ServerInterface.h"
 
-#define SPS_NOT_AVAILABLE
+//#define SPS_NOT_AVAILABLE
 //#define SIMPLE_SERVER
 
 
@@ -38,7 +38,7 @@ int main(int argc, char** argv)
 	ServerInterface<EDataIntepreter, EConnectorDEBUG, EJSONConverter> server;
 	server.io(io).host(argc < 3 ? "SpyderHub" : argv[2]);
 
-	SPS sps;
+	SPSConnection<ESPSIn, ESPSOut> sps;
 
 	try
 	{
@@ -79,8 +79,8 @@ int main(int argc, char** argv)
 			g_log.write(Logger::Catagory::INFO) << "Bytes to be written to the SPS:\n" << data_write;
 
 #ifndef SPS_NOT_AVAILABLE
-			sps.out<SPSWriteRequest>(data_members.value()[DB_Type::REMOTE].db(), data_write);
-			data_members.value()[DB_Type::LOCAL].from_byte_array(sps.in<SPSReadRequest>(data_members.value()[DB_Type::LOCAL].db(), data_members.value()[DB_Type::LOCAL].total_byte_size()));
+			sps.out(data_members.value()[DB_Type::REMOTE].db(), data_write);
+			data_members.value()[DB_Type::LOCAL].from_byte_array(sps.in(data_members.value()[DB_Type::LOCAL].db(), data_members.value()[DB_Type::LOCAL].total_byte_size()));
 
 			g_log.write(Logger::Catagory::INFO) << "Variables read from SPS:\n" << data_members.value()[DB_Type::LOCAL];
 #else
