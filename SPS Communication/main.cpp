@@ -1,6 +1,6 @@
 /*
 To Do
-- make the code less confusing!
+- make the code less confusing! / comments
 - improve memory by limiting variable alloc to 4 bytes
 - Logging
 - Safer getting String from json
@@ -14,7 +14,7 @@ To Do
 #include "SPSIO.h"
 #include "ServerInterface.h"
 
-//#define SPS_NOT_AVAILABLE
+#define SPS_NOT_AVAILABLE
 //#define SIMPLE_SERVER
 
 
@@ -81,6 +81,11 @@ int main(int argc, char** argv)
 #ifndef SPS_NOT_AVAILABLE
 			sps.out<SPSWriteRequest>(data_members.value()[DB_Type::REMOTE].db(), data_write);
 			data_members.value()[DB_Type::LOCAL].from_byte_array(sps.in<SPSReadRequest>(data_members.value()[DB_Type::LOCAL].db(), data_members.value()[DB_Type::LOCAL].total_byte_size()));
+
+			g_log.write(Logger::Catagory::INFO) << "Variables read from SPS:\n" << data_members.value()[DB_Type::LOCAL];
+#else
+			const auto data_read = data_members.value()[DB_Type::LOCAL].to_byte_array();
+			data_members.value()[DB_Type::LOCAL].from_byte_array(data_read);
 
 			g_log.write(Logger::Catagory::INFO) << "Variables read from SPS:\n" << data_members.value()[DB_Type::LOCAL];
 #endif // SPS_NOT_AVAILABLE

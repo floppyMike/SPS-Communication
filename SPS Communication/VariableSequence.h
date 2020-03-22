@@ -68,22 +68,27 @@ public:
 	{
 		_LoopInt_ bool_skip{ 0 };
 		for (auto [iter_byte, iter_seq] = std::pair(bytes.begin(), underlying()->begin()); iter_seq != underlying()->end(); ++iter_seq)
-		{
 			if (iter_seq->type() == Impl::var_t::BOOL)
-				iter_seq->fill_var(static_cast<uint8_t>((*iter_byte << bool_skip.val++) & 1));
+			{
+				if (iter_seq != underlying()->begin() && bool_skip.val == 0)
+					++iter_seq;
+
+				iter_seq->fill_var(static_cast<uint8_t>((*iter_byte >> bool_skip.val++) & 1));
+			}
 			else
 			{
-				if (std::distance(bytes.begin(), iter_byte) & 1 || bool_skip.val != 0)
-					++iter_byte;
+				if (bool_skip.val != 0)
+					++iter_byte,
+					bool_skip.val = 0;
 
-				bool_skip.val = 0;
+				if (!(iter_seq->byte_size() & 1) && std::distance(bytes.begin(), iter_byte) & 1)
+					++iter_byte;
 
 				const auto& type_size = Impl::var_t::TYPE_SIZE[iter_seq->type()];
 
 				iter_seq->fill_var(std::vector(iter_byte, iter_byte + type_size));
 				iter_byte += type_size;
 			}
-		}
 	}
 
 	auto to_byte_array() const
