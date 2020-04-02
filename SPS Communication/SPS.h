@@ -14,8 +14,11 @@ public:
 
 	~SPSConnection()
 	{
-		daveDisconnectPLC(m_connection);
-		daveDisconnectAdapter(m_interface);
+		if (m_connection)
+			daveDisconnectPLC(m_connection);
+
+		if (m_interface)
+			daveDisconnectAdapter(m_interface);
 	}
 
 	void connect(std::string_view port, int protocol = daveProtoISOTCP)

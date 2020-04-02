@@ -14,7 +14,7 @@ To Do
 #include "SPSIO.h"
 #include "ServerInterface.h"
 
-//#define SPS_NOT_AVAILABLE
+#define SPS_NOT_AVAILABLE
 //#define SIMPLE_SERVER
 
 
@@ -35,7 +35,7 @@ int main(int argc, char** argv)
 	std::cout.tie(nullptr);
 
 	asio::io_context io;
-	ServerInterface<EDataIntepreter, EConnectorDEBUG, EJSONConverter> server;
+	ServerInterface<EDataIntepreter, EConnector, EJSONConverter> server;
 	server.io(io).host(argc < 3 ? "SpyderHub" : argv[2]);
 
 	SPSConnection<ESPSIn, ESPSOut> sps;

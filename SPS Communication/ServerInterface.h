@@ -146,7 +146,7 @@ protected:
 		int var, perm;
 
 		if (const auto dat_sub = dat.FindMember("data"); dat_sub != dat.MemberEnd())
-			if (const auto loc_sub = dat_sub->value.FindMember("settings"); loc_sub != dat.MemberEnd())
+			if (const auto loc_sub = dat_sub->value.FindMember("settings"); loc_sub != dat_sub->value.MemberEnd())
 				if (const auto found = _db_exists_(loc_sub->value); found.has_value())
 					std::tie(var, perm) = _db_num_(found.value().first, found.value().second);
 				else
