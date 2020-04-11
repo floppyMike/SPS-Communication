@@ -68,6 +68,9 @@
     <ClInclude Include="ByteArray.h">
       <Filter>Header Files\SPS Connection</Filter>
     </ClInclude>
+    <ClInclude Include="Connector.h">
+      <Filter>Header Files\Wifi Connection</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <Text Include="data.txt">

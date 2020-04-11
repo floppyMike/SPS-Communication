@@ -147,6 +147,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="ByteArray.h" />
+    <ClInclude Include="Connector.h" />
     <ClInclude Include="Logging.h" />
     <ClInclude Include="Parser.h" />
     <ClInclude Include="Response.h" />

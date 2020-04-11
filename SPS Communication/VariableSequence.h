@@ -5,54 +5,6 @@
 #include "Parser.h"
 #include "Variable.h"
 
-template<typename _Var, template<typename> class... Ex>
-class basic_VarSeq : std::vector<_Var>, public Ex<basic_VarSeq<_Var, Ex...>>...
-{
-	using vec_t = std::vector<_Var>;
-
-public:
-	using var_t = _Var;
-
-	basic_VarSeq() = default;
-	basic_VarSeq(int db)
-		: m_db(db)
-	{
-	}
-
-	size_t total_byte_size() const noexcept
-	{
-		return std::accumulate(begin(), end(), 0u, [](size_t num, const auto& i) { return num + i.byte_size(); });
-	}
-
-	const auto& db() const noexcept { return m_db; }
-	auto& db(int db) noexcept { m_db = db; return *this; }
-
-	using vec_t::assign;
-	using vec_t::begin;
-	using vec_t::end;
-	using vec_t::front;
-	using vec_t::back;
-	using vec_t::empty;
-	using vec_t::size;
-	using vec_t::operator[];
-	using vec_t::operator=;
-	using vec_t::emplace_back;
-	using vec_t::push_back;
-
-	friend std::ostream& operator<<(std::ostream& o, const basic_VarSeq& v)
-	{
-		o << "DB: " << v.m_db << '\n';
-
-		for (const auto& i : v)
-			o << i << '\n';
-
-		return o;
-	}
-
-private:
-	int m_db;
-};
-
 template<typename Impl>
 class EVarByteArray
 {
@@ -133,3 +85,51 @@ auto& operator<<(std::ostream& o, const std::vector<uint8_t>& bytes)
 
 	return o;
 }
+
+
+class VarSequence : std::vector<Variable>, public EVarByteArray<VarSequence>
+{
+	using vec_t = std::vector<Variable>;
+
+public:
+	using var_t = Variable;
+
+	VarSequence() = default;
+	VarSequence(int db)
+		: m_db(db)
+	{
+	}
+
+	size_t total_byte_size() const noexcept
+	{
+		return std::accumulate(begin(), end(), 0u, [](size_t num, const auto& i) { return num + i.byte_size(); });
+	}
+
+	const auto& db() const noexcept { return m_db; }
+	auto& db(int db) noexcept { m_db = db; return *this; }
+
+	using vec_t::assign;
+	using vec_t::begin;
+	using vec_t::end;
+	using vec_t::front;
+	using vec_t::back;
+	using vec_t::empty;
+	using vec_t::size;
+	using vec_t::operator[];
+	using vec_t::operator=;
+	using vec_t::emplace_back;
+	using vec_t::push_back;
+
+	friend std::ostream& operator<<(std::ostream& o, const VarSequence& v)
+	{
+		o << "DB: " << v.m_db << '\n';
+
+		for (const auto& i : v)
+			o << i << '\n';
+
+		return o;
+	}
+
+private:
+	int m_db;
+};

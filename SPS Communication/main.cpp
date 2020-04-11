@@ -35,10 +35,12 @@ int main(int argc, char** argv)
 	std::cout.tie(nullptr);
 
 	asio::io_context io;
-	ServerInterface<EDataIntepreter, EConnector, EJSONConverter> server;
+	ServerInterface server;
 	server.io(io).host(argc < 3 ? "SpyderHub" : argv[2]);
 
-	SPSConnection<ESPSIn, ESPSOut> sps;
+#ifndef SPS_NOT_AVAILABLE
+	SPSConnection sps;
+#endif // SPS_NOT_AVAILABLE
 
 	try
 	{
@@ -69,13 +71,24 @@ int main(int argc, char** argv)
 
 			auto data_members = server.get_request();
 
-			g_log.write(Logger::Catagory::INFO) << "Timeout duration: " << server.timeout().count();
-			timeout += server.timeout();
+			g_log.write(Logger::Catagory::INFO) << "Timeout duration: " << server.timeout_dur().count();
+			timeout += server.timeout_dur();
 
-			g_log.write(Logger::Catagory::INFO) << "Variables to be written:\n" << data_members.value()[DB_Type::REMOTE];
-			g_log.write(Logger::Catagory::INFO) << "Variables to be read:\n" << data_members.value()[DB_Type::LOCAL];
+			server.replace_json_stock();
 
-			const auto data_write = data_members.value()[DB_Type::REMOTE].to_byte_array();
+			if (!data_members.has_value())
+			{
+				g_log.write(Logger::Catagory::INFO) << "Settings not available. Ignoring data and sending default settings back.";
+				server.post_request();
+				continue;
+			}
+
+			auto& members = data_members.value();
+
+			g_log.write(Logger::Catagory::INFO) << "Variables to be written:\n" << members[DB_Type::REMOTE];
+			g_log.write(Logger::Catagory::INFO) << "Variables to be read:\n" << members[DB_Type::LOCAL];
+
+			const auto data_write = members[DB_Type::REMOTE].to_byte_array();
 			g_log.write(Logger::Catagory::INFO) << "Bytes to be written to the SPS:\n" << data_write;
 
 #ifndef SPS_NOT_AVAILABLE
@@ -84,13 +97,13 @@ int main(int argc, char** argv)
 
 			g_log.write(Logger::Catagory::INFO) << "Variables read from SPS:\n" << data_members.value()[DB_Type::LOCAL];
 #else
-			const auto data_read = data_members.value()[DB_Type::LOCAL].to_byte_array();
-			data_members.value()[DB_Type::LOCAL].from_byte_array(data_read);
+			const auto data_read = members[DB_Type::LOCAL].to_byte_array();
+			members[DB_Type::LOCAL].from_byte_array(data_read);
 
-			g_log.write(Logger::Catagory::INFO) << "Variables read from SPS:\n" << data_members.value()[DB_Type::LOCAL];
+			g_log.write(Logger::Catagory::INFO) << "Variables read from SPS:\n" << members[DB_Type::LOCAL];
 #endif // SPS_NOT_AVAILABLE
 
-			server.post_request(data_members.value()[DB_Type::LOCAL]);
+			server.post_request(members[DB_Type::LOCAL]);
 		}
 		catch (const std::exception & e)
 		{

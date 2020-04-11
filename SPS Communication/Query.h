@@ -7,36 +7,12 @@
 using Parameter = std::pair<std::string_view, std::string_view>;
 struct Results { std::string header, content; };
 
-template<template<typename> class... Ex>
-class Query : public Ex<Query<Ex...>>...
+class GETBuilder
 {
 public:
-	Query() = default;
+	GETBuilder() = default;
 
-	template<typename Session, typename _Array>
-	Results query(asio::io_context& io, std::string_view host, std::string_view path, const _Array& parameters) const
-	{
-		Session session(io);
-
-		tcp::resolver r(io);
-		tcp::resolver::query q(host.data(), "http");
-		asio::connect(session.socket(), r.resolve(q));
-
-		const auto message = session.query(this->_build_req(host, path, this->_build_para(parameters)));
-
-		return message;
-	}
-
-};
-
-template<typename Impl>
-class EGETBuilder : public crtp<Impl, EGETBuilder>
-{
-public:
-	EGETBuilder() = default;
-
-protected:
-	std::string _build_req(std::string_view host, std::string_view path, std::string_view parameters) const
+	std::string build_req(std::string_view host, std::string_view path, std::string_view parameters) const
 	{
 		std::string chain("GET ");
 		chain.append(path);
@@ -51,29 +27,25 @@ protected:
 	}
 };
 
-template<typename Impl>
-class EPOSTBuilder : public crtp<Impl, EPOSTBuilder>
+class POSTBuilder
 {
 public:
-	EPOSTBuilder() = default;
+	POSTBuilder() = default;
 
-protected:
-	std::string _build_req(std::string_view host, std::string_view path, std::string_view parameters) const
+	std::string build_req(std::string_view host, std::string_view path, std::string_view parameters) const
 	{
 		return std::string("POST ").append(path).append(" HTTP/1.0\r\nHost: ").append(host)
-			.append("\r\n").append(parameters).append("\r\n\r\n");
+			.append("\r\n\r\n").append(parameters);
 	}
 };
 
-template<typename Impl>
-class EParamBuilder : public crtp<Impl, EParamBuilder>
+class ParamBuilder
 {
 public:
-	EParamBuilder() = default;
+	ParamBuilder() = default;
 
-protected:
 	template<typename _Array>
-	std::string _build_para(const _Array& para) const
+	std::string build_para(const _Array& para) const
 	{
 		static_assert(!std::is_same_v<Parameter, decltype(para.front())>, "Array must be of Parameters");
 

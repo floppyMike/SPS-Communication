@@ -6,8 +6,58 @@
 #include "SPSIO.h"
 
 
-template<template<typename> class... Ex>
-class SPSConnection : public Ex<SPSConnection<Ex...>>...
+class ESPSIn
+{
+public:
+	ESPSIn() = default;
+
+protected:
+	auto _in(int db, int len, daveConnection* con)
+	{
+		SPSRequester<TSPSRead> read(con);
+
+		while (len > 0)
+		{
+			const auto curr_len = std::clamp(len, 0, SPSRequester<TSPSRead>::PDU_LIMIT);
+
+			read.add_vars(db, curr_len);
+			len -= curr_len;
+		}
+
+		read.send();
+		return read.results();
+	}
+
+};
+
+class ESPSOut
+{
+public:
+	ESPSOut() = default;
+
+protected:
+	auto _out(int db, const std::vector<uint8_t>& vars, daveConnection* con)
+	{
+		SPSRequester<TSPSWrite> write(con);
+
+		for (auto iter = &vars.front(); iter != &vars.back();)
+		{
+			const auto iter_end = std::clamp(iter + SPSRequester<TSPSWrite>::PDU_LIMIT, &vars.front(), &vars.back());
+
+			write.add_vars(db, { iter, iter_end + 1 });
+			iter = iter_end;
+		}
+
+		write.send();
+		return write.results();
+	}
+
+};
+
+
+class SPSConnection
+	: ESPSIn
+	, ESPSOut
 {
 public:
 	SPSConnection() = default;
@@ -78,54 +128,4 @@ private:
 		if (daveConnectPLC(m_connection) != 0)
 			throw std::runtime_error("Couldn't connect to PLC.");
 	}
-};
-
-template<typename Impl>
-class ESPSIn : public crtp<Impl, ESPSIn>
-{
-public:
-	ESPSIn() = default;
-
-protected:
-	auto _in(int db, int len, daveConnection* con)
-	{
-		SPSRequester<TSPSRead> read(con);
-
-		while (len > 0)
-		{
-			const auto curr_len = std::clamp(len, 0, SPSRequester<TSPSRead>::PDU_LIMIT);
-
-			read.add_vars(db, curr_len);
-			len -= curr_len;
-		}
-
-		read.send();
-		return read.results();
-	}
-
-};
-
-template<typename Impl>
-class ESPSOut : public crtp<Impl, ESPSOut>
-{
-public:
-	ESPSOut() = default;
-
-protected:
-	auto _out(int db, const std::vector<uint8_t>& vars, daveConnection* con)
-	{
-		SPSRequester<TSPSWrite> write(con);
-
-		for (auto iter = &vars.front(); iter != &vars.back();)
-		{
-			const auto iter_end = std::clamp(iter + SPSRequester<TSPSWrite>::PDU_LIMIT, &vars.front(), &vars.back());
-
-			write.add_vars(db, { iter, iter_end + 1 });
-			iter = iter_end;
-		}
-
-		write.send();
-		return write.results();
-	}
-
 };
