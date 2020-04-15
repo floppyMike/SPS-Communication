@@ -3,24 +3,21 @@
 #include "Includes.h"
 #include "Logging.h"
 
-template<typename Impl>
-class EConnector : public crtp<Impl, EConnector>
+class Connector
 {
 public:
-	EConnector() = default;
+	Connector() = default;
 
-	auto& io(asio::io_context& i) noexcept { m_io = &i; return *this->underlying(); }
+	void io(asio::io_context& i) noexcept { m_io = &i; }
 
 	const auto& host() const noexcept { return m_host; }
-	auto& host(std::string_view h) noexcept { m_host = h; return *this->underlying(); }
+	void host(std::string_view h) noexcept { m_host = h; }
 
-protected:
 	template<typename Builder, typename _Array>
-	std::string _query(std::string_view path, const _Array& para)
+	std::string query(std::string_view path, const _Array& para)
 	{
 		//Send query multiple times
 		for (char test_case = 1; test_case <= 5; ++test_case)
-		{
 			try
 			{
 				Session session(*m_io);
@@ -38,7 +35,6 @@ protected:
 				g_log.write(Logger::Catagory::ERR, e.what());
 				g_log.write(Logger::Catagory::INFO) << "Case: " << +test_case << " of 5";
 			}
-		}
 
 		//Throw error at fail
 		throw std::exception("Server query failed.");
@@ -50,19 +46,18 @@ private:
 };
 
 
-template<typename Impl>
-class EConnectorDEBUG : public crtp<Impl, EConnector>
+class ConnectorDEBUG
 {
 public:
-	EConnectorDEBUG() = default;
+	ConnectorDEBUG() = default;
 
-	auto& io(asio::io_context& i) noexcept { m_io = &i; return *this->underlying(); }
+	void io(asio::io_context& i) noexcept { m_io = &i; }
 
 	const auto& host() const noexcept { return m_host; }
-	auto& host(std::string_view h) noexcept { m_host = h; return *this->underlying(); }
+	void host(std::string_view h) noexcept { m_host = h; }
 
 protected:
-	template<template<typename> class Builder, typename... Args>
+	template<typename Builder, typename... Args>
 	std::string _query(Args&&... para)
 	{
 		return _debug_filereader_("data.txt");

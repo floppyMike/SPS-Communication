@@ -146,8 +146,9 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ByteArray.h" />
     <ClInclude Include="Connector.h" />
+    <ClInclude Include="Interpeter.h" />
+    <ClInclude Include="JSON.h" />
     <ClInclude Include="Logging.h" />
     <ClInclude Include="Parser.h" />
     <ClInclude Include="Response.h" />
@@ -159,10 +160,12 @@
     <ClInclude Include="utility.h" />
     <ClInclude Include="Variable.h" />
     <ClInclude Include="VariableSequence.h" />
-    <ClInclude Include="Sequencer.h" />
   </ItemGroup>
   <ItemGroup>
     <Text Include="data.txt" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="interpret" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

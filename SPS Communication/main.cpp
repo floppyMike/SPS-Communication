@@ -1,10 +1,7 @@
 /*
 To Do
-- make the code less confusing! / comments
+- comments
 - improve memory by limiting variable alloc to 4 bytes
-- Logging
-- Safer getting String from json
-- friendly section comes from us
 */
 
 
@@ -15,17 +12,16 @@ To Do
 #include "ServerInterface.h"
 
 #define SPS_NOT_AVAILABLE
-//#define SIMPLE_SERVER
-
 
 
 int main(int argc, char** argv)
 {
 	if (argc < 2)
 	{
-		std::cerr << "Usage: <SPS Port> [Host]\n"
+		std::cerr << "Usage: SPS_Port [Host]\n"
 			"\"SPS Port\": Port on which the SPS sits.\n"
-			"\"Host\": Server name of machine where ProjectSpyder is running.\n";
+			"\"Host\": Server name of machine where ProjectSpyder is running.\n"
+			"\"-p\": Looks for file \"prev.auth\" and uses its authentication code for the server.\n";
 		//"\"-d\": Launch application in debug mode.\n";
 
 		return 1;
@@ -36,7 +32,8 @@ int main(int argc, char** argv)
 
 	asio::io_context io;
 	ServerInterface server;
-	server.io(io).host(argc < 3 ? "SpyderHub" : argv[2]);
+	server.io(io);
+	server.host(argc < 3 ? "SpyderHub" : argv[2]);
 
 #ifndef SPS_NOT_AVAILABLE
 	SPSConnection sps;
@@ -51,7 +48,6 @@ int main(int argc, char** argv)
 
 		g_log.write(Logger::Catagory::INFO) << "Pairing up with host " << server.host();
 		server.pair_up();
-
 	}
 	catch (const std::exception& e)
 	{
@@ -64,46 +60,35 @@ int main(int argc, char** argv)
 		return -1;
 	}
 
-	for (auto [quit, timeout] = std::pair(false, std::chrono::steady_clock::now() + server.timeout_dur()); !quit;)
+	for (auto [quit, timeout] = std::pair(false, std::chrono::steady_clock::now() + server.timeout()); !quit;)
 		try
 		{
 			std::this_thread::sleep_until(timeout);
+			auto members = server.get_request();
 
-			auto data_members = server.get_request();
+			g_log.write(Logger::Catagory::INFO) << "Timeout duration: " << server.timeout().count();
+			timeout += server.timeout();
 
-			g_log.write(Logger::Catagory::INFO) << "Timeout duration: " << server.timeout_dur().count();
-			timeout += server.timeout_dur();
+			g_log.write(Logger::Catagory::INFO) << "Variables to be written:\n" << members[DB_Type::MUTABLE];
+			g_log.write(Logger::Catagory::INFO) << "Variables to be read:\n" << members[DB_Type::CONST];
 
-			server.replace_json_stock();
-
-			if (!data_members.has_value())
-			{
-				g_log.write(Logger::Catagory::INFO) << "Settings not available. Ignoring data and sending default settings back.";
-				server.post_request();
-				continue;
-			}
-
-			auto& members = data_members.value();
-
-			g_log.write(Logger::Catagory::INFO) << "Variables to be written:\n" << members[DB_Type::REMOTE];
-			g_log.write(Logger::Catagory::INFO) << "Variables to be read:\n" << members[DB_Type::LOCAL];
-
-			const auto data_write = members[DB_Type::REMOTE].to_byte_array();
+			const auto data_write = ByteArrayConverter().to_byte_array(members[DB_Type::MUTABLE]);
 			g_log.write(Logger::Catagory::INFO) << "Bytes to be written to the SPS:\n" << data_write;
 
 #ifndef SPS_NOT_AVAILABLE
-			sps.out(data_members.value()[DB_Type::REMOTE].db(), data_write);
-			data_members.value()[DB_Type::LOCAL].from_byte_array(sps.in(data_members.value()[DB_Type::LOCAL].db(), data_members.value()[DB_Type::LOCAL].total_byte_size()));
+			sps.out(data_members.value()[DB_Type::MUTABLE].db(), data_write);
+			data_members.value()[DB_Type::CONST].from_byte_array(sps.in(data_members.value()[DB_Type::CONST].db(), data_members.value()[DB_Type::CONST].total_byte_size()));
 
-			g_log.write(Logger::Catagory::INFO) << "Variables read from SPS:\n" << data_members.value()[DB_Type::LOCAL];
+			g_log.write(Logger::Catagory::INFO) << "Variables read from SPS:\n" << data_members.value()[DB_Type::CONST];
 #else
-			const auto data_read = members[DB_Type::LOCAL].to_byte_array();
-			members[DB_Type::LOCAL].from_byte_array(data_read);
+			const auto data_read = ByteArrayConverter().to_byte_array(members[DB_Type::CONST]);
+			auto const_test = ByteArrayConverter().from_byte_array(data_read);
 
-			g_log.write(Logger::Catagory::INFO) << "Variables read from SPS:\n" << members[DB_Type::LOCAL];
+			g_log.write(Logger::Catagory::INFO) << "Variables read from SPS:\n" << members[DB_Type::CONST];
 #endif // SPS_NOT_AVAILABLE
 
-			server.post_request(members[DB_Type::LOCAL]);
+			std::this_thread::sleep_until(timeout);
+			server.post_request(members[DB_Type::CONST]);
 		}
 		catch (const std::exception & e)
 		{

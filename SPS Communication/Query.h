@@ -34,8 +34,8 @@ public:
 
 	std::string build_req(std::string_view host, std::string_view path, std::string_view parameters) const
 	{
-		return std::string("POST ").append(path).append(" HTTP/1.0\r\nHost: ").append(host)
-			.append("\r\n\r\n").append(parameters);
+		return std::string("POST ").append(path).append(" HTTP/1.0\r\nHost: ").append(host).append("\r\nContent-Type: application/x-www-form-urlencoded")
+			.append("\r\nContent-Length: ").append(std::to_string(parameters.size())).append("\r\n\r\n").append(parameters).append("\r\n\r\n");
 	}
 };
 

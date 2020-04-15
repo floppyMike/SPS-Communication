@@ -11,14 +11,11 @@ public:
 	static constexpr std::array<std::string_view, MAX> TYPE_STR = { "BOOL", "BYTE", "WORD", "DWORD", "CHAR", "INT", "DINT", "REAL" };
 
 public:
-	Variable(Type t)
+	Variable(std::string_view var_name, Type t)
 		: m_type(t)
+		, m_name(var_name)
+		, m_data(TYPE_SIZE[t], 0)
 	{
-	}
-
-	auto byte_size() const noexcept 
-	{
-		return TYPE_SIZE[m_type];
 	}
 
 	void fill_var(std::string_view str_val)
@@ -63,23 +60,22 @@ public:
 	template<typename _T, typename = typename std::enable_if_t<std::is_arithmetic_v<_T>>>
 	void fill_var(_T val)
 	{
-		m_data.resize(sizeof(_T));
+		assert(sizeof(_T) == m_data.size() && "Value size isn't the matching the type of variable.");
 		*reinterpret_cast<_T*>(&m_data.front()) = val;
 		std::reverse(m_data.begin(), m_data.end());
 	}
 
-	void fill_var(const std::vector<uint8_t>& val)
-	{
-		m_data = val;
-	}
+	auto byte_size() const noexcept { return TYPE_SIZE[m_type]; }
 
-	void fill_var(std::vector<uint8_t>&& val)
-	{
-		m_data = std::move(val);
-	}
+	void fill_var(const std::vector<uint8_t>& val) { m_data = val; }
+	void fill_var(std::vector<uint8_t>&& val) noexcept { m_data = std::move(val); }
 
 	const auto& data() const noexcept { return m_data; }
 	const auto& type() const noexcept { return m_type; }
+
+	void name(std::string_view str) noexcept { m_name = str; }
+	void name(std::string&& str) noexcept { m_name = std::move(str); }
+	std::string_view name() const noexcept { return m_name; }
 
 	std::string_view type_str() const noexcept { return TYPE_STR[m_type]; }
 	
@@ -119,7 +115,7 @@ public:
 
 	friend std::ostream& operator<<(std::ostream& o, const Variable& v)
 	{
-		o << "Type: " << v.type_str() << "\t Value: " << v.val_str() << "\t Bytes: ";
+		o << "Name: " << v.m_name << "\t Type: " << v.type_str() << "\t Value: " << v.val_str() << "\t Bytes: ";
 
 		for (const auto& i : v.m_data)
 			o << std::hex << +i << ' ';
@@ -128,8 +124,9 @@ public:
 	}
 
 private:
-	std::vector<uint8_t> m_data;
 	Type m_type;
+	std::string m_name;
+	std::vector<uint8_t> m_data;
 
 	template<typename T>
 	T _get_num_(std::string_view s)
