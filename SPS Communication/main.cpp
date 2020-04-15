@@ -2,6 +2,9 @@
 To Do
 - comments
 - improve memory by limiting variable alloc to 4 bytes
+- moving timing
+- create reasonable installation
+- documentation
 */
 
 
