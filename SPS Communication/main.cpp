@@ -2,9 +2,9 @@
 To Do
 - comments
 - improve memory by limiting variable alloc to 4 bytes
-- moving timing
 - create reasonable installation
 - documentation
+- use previous authentication
 */
 
 
@@ -13,8 +13,9 @@ To Do
 #include "SPS.h"
 #include "SPSIO.h"
 #include "ServerInterface.h"
+#include "ProgramParameters.h"
 
-#define SPS_NOT_AVAILABLE
+//#define SPS_NOT_AVAILABLE
 
 bool setup(ServerInterface&, SPSConnection&);
 void init(ServerInterface&, SPSConnection&);
@@ -22,13 +23,15 @@ void runtime(ServerInterface&, SPSConnection&);
 
 int main(int argc, char** argv)
 {
-	if (argc < 2)
+	g_para.init(argc, argv);
+
+	if (argc == 2)
 	{
-		std::cerr << "Usage: SPS_Port [Host]\n"
+		std::cerr << "Usage: SPS_Port Host\n"
 			"\"SPS Port\": Port on which the SPS sits.\n"
-			"\"Host\": Server name of machine where ProjectSpyder is running.\n"
-			"\"-p\": Looks for file \"prev.auth\" and uses its authentication code for the server.\n";
-		//"\"-d\": Launch application in debug mode.\n";
+			"\"Host\": Server name of machine where ProjectSpyder is running.\n";
+			//"\"-p\": Looks for file specified and uses its authentication code for the server.\n";
+			//"\"-d\": Launch application in debug mode.\n";
 
 		return 1;
 	}
@@ -39,7 +42,7 @@ int main(int argc, char** argv)
 	asio::io_context io;
 	ServerInterface server;
 	server.io(io);
-	server.host(argc < 3 ? "SpyderHub" : argv[2]);
+	server.host(argc < 3 ? "SpyderHub" : g_para[ParaType::HOST_SERVER]);
 
 	SPSConnection sps;
 
@@ -59,8 +62,8 @@ bool setup(ServerInterface& server, SPSConnection& sps)
 	try
 	{
 #ifndef SPS_NOT_AVAILABLE
-		g_log.write(Logger::Catagory::INFO) << "Connecting to SPS on port " << argv[1];
-		sps.connect(argv[1]);
+		g_log.write(Logger::Catagory::INFO) << "Connecting to SPS on port " << g_para[ParaType::SPS_PORT];
+		sps.connect(g_para[ParaType::SPS_PORT]);
 #endif // SPS_NOT_AVAILABLE
 
 		g_log.write(Logger::Catagory::INFO) << "Pairing up with host " << server.host();
@@ -91,8 +94,8 @@ void init(ServerInterface& server, SPSConnection& sps)
 			g_log.write(Logger::Catagory::INFO) << "Variables to be read for the init. of constant variables:\n" << members[DB_Type::CONST];
 
 #ifndef SPS_NOT_AVAILABLE
-			members[DB_Type::MUTABLE].from_byte_array(sps.in(members[DB_Type::MUTABLE].db(), members[DB_Type::MUTABLE].total_byte_size()));
-			members[DB_Type::CONST].from_byte_array(sps.in(members[DB_Type::CONST].db(), members[DB_Type::CONST].total_byte_size()));
+			ByteArrayConverter().from_byte_array(members[DB_Type::MUTABLE], sps.in(members[DB_Type::MUTABLE].db(), members[DB_Type::MUTABLE].total_byte_size()));
+			ByteArrayConverter().from_byte_array(members[DB_Type::CONST], sps.in(members[DB_Type::CONST].db(), members[DB_Type::CONST].total_byte_size()));
 #else
 			ByteArrayConverter().from_byte_array(members[DB_Type::MUTABLE], ByteArrayConverter().to_byte_array(members[DB_Type::MUTABLE]));
 			ByteArrayConverter().from_byte_array(members[DB_Type::CONST], ByteArrayConverter().to_byte_array(members[DB_Type::CONST]));
@@ -131,7 +134,7 @@ void runtime(ServerInterface& server, SPSConnection& sps)
 
 #ifndef SPS_NOT_AVAILABLE
 			sps.out(members[DB_Type::MUTABLE].db(), data_write);
-			members[DB_Type::CONST].from_byte_array(sps.in(members[DB_Type::CONST].db(), members[DB_Type::CONST].total_byte_size()));
+			ByteArrayConverter().from_byte_array(members[DB_Type::CONST], sps.in(members[DB_Type::CONST].db(), members[DB_Type::CONST].total_byte_size()));
 #else
 			ByteArrayConverter().from_byte_array(members[DB_Type::CONST], ByteArrayConverter().to_byte_array(members[DB_Type::CONST]));
 #endif // SPS_NOT_AVAILABLE
