@@ -58,7 +58,7 @@ public:
 	}
 
 private:
-	int m_db;
+	int m_db = 0;
 };
 
 class ByteArrayConverter
@@ -68,10 +68,8 @@ class ByteArrayConverter
 public:
 	ByteArrayConverter() = default;
 
-	auto from_byte_array(const std::vector<uint8_t>& bytes)
+	void from_byte_array(VarSequence& seq, const std::vector<uint8_t>& bytes)
 	{
-		VarSequence seq;
-
 		_LoopInt_ bool_skip{ 0 };	// Bools are stored in order in 1 byte
 		for (auto [iter_byte, iter_seq] = std::pair(bytes.begin(), seq.begin()); iter_seq != seq.end(); ++iter_seq)
 			if (iter_seq->type() == Variable::BOOL)
@@ -95,8 +93,6 @@ public:
 				iter_seq->fill_var(std::vector(iter_byte, iter_byte + type_size));
 				iter_byte += type_size;
 			}
-
-		return seq;
 	}
 
 	auto to_byte_array(const VarSequence& seq) const

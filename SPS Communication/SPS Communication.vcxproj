@@ -157,6 +157,7 @@
     <ClInclude Include="ServerInterface.h" />
     <ClInclude Include="SPS.h" />
     <ClInclude Include="SPSIO.h" />
+    <ClInclude Include="Stockmanager.h" />
     <ClInclude Include="utility.h" />
     <ClInclude Include="Variable.h" />
     <ClInclude Include="VariableSequence.h" />

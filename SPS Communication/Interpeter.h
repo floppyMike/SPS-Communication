@@ -13,9 +13,9 @@ public:
 	void prepare_seqs(JSONValue settings)
 	{
 		for (auto& i : settings)
-			if (i.name.GetString() == "const")
+			if (::strcmp(i.name.GetString(), "const") == 0)
 				m_seqs[DB_Type::CONST].db(JSONValue(i.value).num<int>());
-			else if (i.name.GetString() == "mutable")
+			else if (::strcmp(i.name.GetString(), "mutable") == 0)
 				m_seqs[DB_Type::MUTABLE].db(JSONValue(i.value).num<int>());
 			else
 				g_log.write(Logger::Catagory::ERR) << "Undefined option " << i.name.GetString() << " found.";
@@ -68,9 +68,9 @@ private:
 		throw std::runtime_error(std::string("Unrecognised type: ").append(str));
 	}
 
-	VarSequence _get_vars_(std::istream& in)
+	std::vector<Variable> _get_vars_(std::istream& in)
 	{
-		VarSequence data;
+		std::vector<Variable> data;
 
 		for (std::string var_name; in.peek() != '\n' && std::getline(in, var_name, ':');)
 		{
