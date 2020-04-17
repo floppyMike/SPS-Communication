@@ -31,13 +31,31 @@ auto guarded_get(std::optional<_T>&& opt, std::string_view message_on_error)
 		throw std::runtime_error(message_on_error.data());
 }
 
-const char* safe_string_extract(const rapidjson::Value& val)
+const char* guarded_get_string(const rj::Value& val)
 {
 	if (val.IsString())
 		return val.GetString();
 	else
 		throw std::runtime_error("String expected at data variable.");
 }
+
+const auto& guarded_get_section(const rj::Value& val, std::string_view sec)
+{
+	if (auto iter = val.FindMember(sec.data()); iter != val.MemberEnd())
+		return iter->value;
+	else
+		throw std::runtime_error("Object \"" + std::string(sec) + "\" not found in the json data.");
+}
+
+auto& guarded_get_section(rj::Value& val, std::string_view sec)
+{
+	if (auto iter = val.FindMember(sec.data()); iter != val.MemberEnd())
+		return iter->value;
+	else
+		throw std::runtime_error("Object \"" + std::string(sec) + "\" not found in the json data.");
+}
+
+
 
 //template<typename _Typ, typename _Parent>
 //class Getter_Setter

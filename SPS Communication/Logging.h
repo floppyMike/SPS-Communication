@@ -40,22 +40,12 @@ public:
 	static constexpr std::string_view LOG_FILE = "log.txt";
 
 	Logger()
-	{
-		std::ofstream(LOG_FILE.data());
-	}
-	Logger(std::string_view message)
-		: m_buffer(message)
+		: m_out_file(LOG_FILE.data())
 	{
 	}
 
 	Logger(const Logger&) = delete;
 	Logger(Logger&&) = delete;
-
-	~Logger()
-	{
-		std::ofstream file(LOG_FILE.data(), std::ios::out | std::ios::binary | std::ios::app);
-		file.write(m_buffer.data(), m_buffer.size());
-	}
 
 	auto write(Catagory c)
 	{
@@ -83,14 +73,11 @@ public:
 		_write_buffer_(str, amount);
 		_write_buffer_("\n");
 
-		if (m_buffer.size() >= 1024)
-			_flush_();
-
 		return *this;
 	}
 
 private:
-	std::string m_buffer;
+	std::ofstream m_out_file;
 
 	void _write_time_()
 	{
@@ -122,7 +109,7 @@ private:
 
 	void _write_buffer_(const char* str, size_t amount, _Color_ col = _Color_::WHITE)
 	{
-		m_buffer.append(str, amount);
+		m_out_file.write(str, amount);
 
 		switch (col)
 		{
@@ -133,13 +120,9 @@ private:
 		case Logger::_Color_::RED:		std::clog << "\x1B[91m" + std::string(str, amount) + "\033[m";	break;
 		default: break;
 		}
-	}
 
-	void _flush_()
-	{
-		std::ofstream file(LOG_FILE.data(), std::ios::out | std::ios::binary);
-		file.write(m_buffer.data(), m_buffer.size());
-		m_buffer.clear();
+		if (m_out_file.tellp() >= std::numeric_limits<unsigned short>::max())
+			m_out_file.seekp(0);
 	}
 };
 

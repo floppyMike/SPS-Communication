@@ -12,6 +12,8 @@
 #include <array>
 #include <ctime>
 
+#define NOMINMAX
+
 #define BCCWIN
 #include <nodavesimple.h>
 #include <setport.h>
@@ -25,5 +27,10 @@
 #include "rapidjson/stringbuffer.h"
 #include "rapidjson/writer.h"
 
+#undef CONST
+
 using asio::ip::tcp;
+
 using namespace std::chrono_literals;
+
+namespace rj = rapidjson;

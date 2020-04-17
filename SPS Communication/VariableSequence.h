@@ -5,16 +5,24 @@
 #include "Parser.h"
 #include "Variable.h"
 
-template<typename _Var, template<typename> class... Ex>
-class basic_VarSeq : std::vector<_Var>, public Ex<basic_VarSeq<_Var, Ex...>>...
+auto& operator<<(std::ostream& o, const std::vector<uint8_t>& bytes)
 {
-	using vec_t = std::vector<_Var>;
+	for (const auto& i : bytes)
+		o << std::hex << +i << ' ';
+	o.put('\n');
 
+	return o;
+}
+
+
+class VarSequence : std::vector<Variable>
+{
 public:
-	using var_t = _Var;
+	using vec_t = std::vector<Variable>;
 
-	basic_VarSeq() = default;
-	basic_VarSeq(int db)
+	using vec_t::vec_t;
+
+	VarSequence(int db)
 		: m_db(db)
 	{
 	}
@@ -39,7 +47,7 @@ public:
 	using vec_t::emplace_back;
 	using vec_t::push_back;
 
-	friend std::ostream& operator<<(std::ostream& o, const basic_VarSeq& v)
+	friend std::ostream& operator<<(std::ostream& o, const VarSequence& v)
 	{
 		o << "DB: " << v.m_db << '\n';
 
@@ -50,42 +58,51 @@ public:
 	}
 
 private:
-	int m_db;
+	int m_db = 0;
 };
 
-template<typename Impl>
-class EVarByteArray
+class ByteArrayConverter
 {
-	const Impl* underlying() const noexcept { return static_cast<const Impl*>(this); }
-	Impl* underlying() noexcept { return static_cast<Impl*>(this); }
-
 	struct _LoopInt_ { size_t val : 3; };
 
 public:
-	EVarByteArray() = default;
+	ByteArrayConverter() = default;
 
-	void from_byte_array(const std::vector<uint8_t>& bytes)
+	void from_byte_array(VarSequence& seq, const std::vector<uint8_t>& bytes)
 	{
-		if (underlying()->total_byte_size() != bytes.size())
-			throw std::runtime_error("Too many or not enought bytes to fill out from SPS.");
+		_LoopInt_ bool_skip{ 0 };	// Bools are stored in order in 1 byte
+		for (auto [iter_byte, iter_seq] = std::pair(bytes.begin(), seq.begin()); iter_seq != seq.end(); ++iter_seq)
+			if (iter_seq->type() == Variable::BOOL)
+			{
+				if (iter_seq != seq.begin() && bool_skip.val == 0)
+					++iter_seq;
 
-		for (auto [iter_byte, iter_seq] = std::pair(bytes.begin(), underlying()->begin()); iter_seq != underlying()->end(); ++iter_seq)
-		{
-			const auto iter_byte_end = iter_byte + iter_seq->byte_size();
-			iter_seq->fill_var({ iter_byte, iter_byte_end });
-			iter_byte = iter_byte_end;
-		}
+				iter_seq->fill_var(static_cast<uint8_t>((*iter_byte >> bool_skip.val++) & 1));
+			}
+			else
+			{
+				if (bool_skip.val != 0)
+					++iter_byte,
+					bool_skip.val = 0;
+
+				if (!(iter_seq->byte_size() & 1) && std::distance(bytes.begin(), iter_byte) & 1)
+					++iter_byte;
+
+				const auto& type_size = Variable::TYPE_SIZE[iter_seq->type()];
+
+				iter_seq->fill_var(std::vector(iter_byte, iter_byte + type_size));
+				iter_byte += type_size;
+			}
 	}
 
-	auto to_byte_array() const
+	auto to_byte_array(const VarSequence& seq) const
 	{
 		std::vector<uint8_t> arr;
 
 		_LoopInt_ bool_skip{ 0 };	// Bools are stored in order in 1 byte
 		size_t was_byte = 0;		// Bytes (BOOL, CHAR, BYTE) must be stored evenly
-		for (auto iter_var = underlying()->begin(); iter_var != underlying()->end(); ++iter_var)
-		{
-			if (iter_var->type() == Impl::var_t::BOOL)
+		for (auto iter_var = seq.begin(); iter_var != seq.end(); ++iter_var)
+			if (iter_var->type() == Variable::BOOL)
 			{
 				if (bool_skip.val == 0)
 					arr.emplace_back(),
@@ -107,17 +124,10 @@ public:
 				arr.insert(arr.end(), iter_var->data().begin(), iter_var->data().end());
 				bool_skip.val = 0;
 			}
-		}
 
 		return arr;
 	}
 };
 
-auto& operator<<(std::ostream& o, const std::vector<uint8_t>& bytes)
-{
-	for (const auto& i : bytes)
-		o << std::hex << +i << ' ';
-	o.put('\n');
-
-	return o;
-}
+enum DB_Type { MUTABLE, CONST, DB_MAX };
+using VariableSequences = std::array<VarSequence, DB_MAX>;

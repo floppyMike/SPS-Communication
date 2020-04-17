@@ -3,18 +3,72 @@
 #include "Includes.h"
 #include "Logging.h"
 #include "VariableSequence.h"
+#include "SPSIO.h"
 
 
-template<template<typename> class... Ex>
-class basic_SPSConnection : public Ex<basic_SPSConnection<Ex...>>...
+class ESPSIn
 {
 public:
-	basic_SPSConnection() = default;
+	ESPSIn() = default;
 
-	~basic_SPSConnection()
+protected:
+	auto _in(int db, int len, daveConnection* con)
 	{
-		daveDisconnectPLC(m_connection);
-		daveDisconnectAdapter(m_interface);
+		SPSRequester<TSPSRead> read(con);
+
+		while (len > 0)
+		{
+			const auto curr_len = std::clamp(len, 0, SPSRequester<TSPSRead>::PDU_LIMIT);
+
+			read.add_vars(db, curr_len);
+			len -= curr_len;
+		}
+
+		read.send();
+		return read.results();
+	}
+
+};
+
+class ESPSOut
+{
+public:
+	ESPSOut() = default;
+
+protected:
+	auto _out(int db, const std::vector<uint8_t>& vars, daveConnection* con)
+	{
+		SPSRequester<TSPSWrite> write(con);
+
+		for (auto iter = &vars.front(); iter != &vars.back();)
+		{
+			const auto iter_end = std::clamp(iter + SPSRequester<TSPSWrite>::PDU_LIMIT, &vars.front(), &vars.back());
+
+			write.add_vars(db, { iter, iter_end + 1 });
+			iter = iter_end;
+		}
+
+		write.send();
+		return write.results();
+	}
+
+};
+
+
+class SPSConnection
+	: ESPSIn
+	, ESPSOut
+{
+public:
+	SPSConnection() = default;
+
+	~SPSConnection()
+	{
+		if (m_connection)
+			daveDisconnectPLC(m_connection);
+
+		if (m_interface)
+			daveDisconnectAdapter(m_interface);
 	}
 
 	void connect(std::string_view port, int protocol = daveProtoISOTCP)
@@ -25,9 +79,16 @@ public:
 		_init_connection_();
 	}
 
-	auto* connection_ptr()
+	auto in(int db, int len)
 	{
-		return m_connection;
+		g_log.write(Logger::Catagory::INFO) << "Reading SPS on db " << db << " with length " << len;
+		return this->_in(db, len, m_connection);
+	}
+
+	auto out(int db, const std::vector<uint8_t>& vars)
+	{
+		g_log.write(Logger::Catagory::INFO) << "Writing into db " << db << " bytes of size " << vars.size();
+		return this->_out(db, vars, m_connection);
 	}
 
 private:
@@ -37,11 +98,9 @@ private:
 
 	void _open_socket_(std::string_view port)
 	{
-		m_serial.rfd = openSocket(102, const_cast<char*>("192.168.209.128"));
-		m_serial.wfd = m_serial.rfd;
-
+		m_serial.wfd = m_serial.rfd = openSocket(102, const_cast<char*>(port.data()));
 		if (m_serial.rfd == 0)
-			throw std::runtime_error("Couldn't open serial port" + std::string(port));
+			throw std::runtime_error("Couldn't open serial port " + std::string(port));
 	}
 
 	void _init_interface_(int protocol)
@@ -70,63 +129,3 @@ private:
 			throw std::runtime_error("Couldn't connect to PLC.");
 	}
 };
-
-template<typename Impl>
-class ESPSIO
-{
-	const Impl* underlying() const noexcept { return static_cast<Impl*>(this); }
-	Impl* underlying() noexcept { return static_cast<Impl*>(this); }
-
-	struct _LoopInt_ { size_t val : 3; };
-
-public:
-	ESPSIO() = default;
-
-	template<typename ReadSession>
-	auto in(int db, int len)
-	{
-		g_log.write(Logger::Catagory::INFO) << "Reading SPS on db " << db << " with length " << len;
-
-		assert(len != 0);
-
-		ReadSession read(underlying()->connection_ptr());
-
-		while (len > 0)
-		{
-			const auto curr_len = std::clamp(len, 0, ReadSession::PDU_READ_LIMIT);
-
-			read.add_vars(db, curr_len);
-			len -= curr_len;
-		}
-
-		read.send();
-		return read.results();
-	}
-
-	template<typename WriteSession>
-	auto out(int db, const std::vector<uint8_t>& vars)
-	{
-		g_log.write(Logger::Catagory::INFO) << "Writing into db " << db << " bytes of size " << vars.size();
-
-		assert(!vars.empty());
-
-		WriteSession write(underlying()->connection_ptr());
-
-		for (auto iter = &vars.front(); iter != &vars.back();)
-		{
-			const auto iter_end = std::clamp(iter + WriteSession::PDU_WRITE_LIMIT, &vars.front(), &vars.back());
-
-			write.add_vars(db, { iter, iter_end + 1 });
-			iter = iter_end;
-		}
-
-		write.send();
-		return write.results();
-	}
-
-private:
-
-};
-
-
-using SPS = basic_SPSConnection<ESPSIO>;

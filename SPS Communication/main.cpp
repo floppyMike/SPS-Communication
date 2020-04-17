@@ -1,11 +1,9 @@
 /*
 To Do
-- fix SPS not writing data bug
-- make the code less confusing!
+- comments
 - improve memory by limiting variable alloc to 4 bytes
-- Logging
-- Safer getting String from json
-- friendly section comes from us
+- create reasonable installation
+- documentation
 */
 
 
@@ -14,79 +12,131 @@ To Do
 #include "SPS.h"
 #include "SPSIO.h"
 #include "ServerInterface.h"
+#include "ProgramParameters.h"
 
 #define SPS_NOT_AVAILABLE
-//#define SIMPLE_SERVER
 
-
+void setup(ServerInterface&, SPSConnection&);
+void init(ServerInterface&, SPSConnection&);
+void runtime(ServerInterface&, SPSConnection&);
 
 int main(int argc, char** argv)
 {
-	if (argc < 2)
-	{
-		std::cerr << "Usage: <SPS Port> [Host]\n"
-			"\"SPS Port\": Port on which the SPS sits.\n"
-			"\"Host\": Server name of machine where ProjectSpyder is running.\n";
-		//"\"-d\": Launch application in debug mode.\n";
-
-		return 1;
-	}
-
-	std::ios_base::sync_with_stdio(false);
-	std::cout.tie(nullptr);
-
-	asio::io_context io;
-	basic_ServerInterface<EDataIntepreter, EConnector, EJSONConverter> server;
-	server.io(io).host(argc < 3 ? "SpyderHub" : argv[2]);
-
 	try
 	{
-#ifndef SPS_NOT_AVAILABLE
-		g_log.write(Logger::Catagory::INFO) << "Connecting to SPS on port " << port;
-		SPS sps;
-		sps.connect(argv[1]);
-#endif // SPS_NOT_AVAILABLE
+		g_para.init(argc, argv);
 
-		g_log.write(Logger::Catagory::INFO) << "Pairing up with host " << server.host();
-		server.pair_up();
+		if (argc == 2)
+		{
+			std::cerr << "Usage: SPS_Port Host\n"
+				"\"SPS Port\": Port on which the SPS sits.\n"
+				"\"Host\": Server name of machine where ProjectSpyder is running.\n";
+			//"\"-p\": Looks for file specified and uses its authentication code for the server.\n";
+			//"\"-d\": Launch application in debug mode.\n";
 
+			return 1;
+		}
+
+		std::ios_base::sync_with_stdio(false);
+		std::cout.tie(nullptr);
+
+		asio::io_context io;
+		ServerInterface server;
+		server.io(io);
+		server.host(argc < 3 ? "SpyderHub" : g_para[ParaType::HOST_SERVER]);
+
+		SPSConnection sps;
+
+		setup(server, sps);
+		init(server, sps);
+		runtime(server, sps);
 	}
 	catch (const std::exception& e)
 	{
-		g_log.write(Logger::Catagory::FATAL, e.what());
-		return -1;
+		g_log.write(Logger::Catagory::FATAL) << "Error during setup: " << e.what();
+		return 1;
 	}
 	catch (...)
 	{
-		g_log.write(Logger::Catagory::FATAL, "Unknown error.");
-		return -1;
+		g_log.write(Logger::Catagory::FATAL, "Unknown error. Exiting.");
+		return 1;
 	}
 
-	for (auto [quit, timeout] = std::pair(false, std::chrono::steady_clock::now() + server.timeout_dur()); !quit;)
-		try
-		{
-			std::this_thread::sleep_until(timeout);
+	return 0;
+}
 
-			auto data_members = server.get_request();
-
-			g_log.write(Logger::Catagory::INFO) << "Timeout duration: " << server.timeout().count();
-			timeout += server.timeout();
-
-			g_log.write(Logger::Catagory::INFO) << "Variables to be written:\n" << data_members.value()[DB_Type::REMOTE];
-			g_log.write(Logger::Catagory::INFO) << "Variables to be read:\n" << data_members.value()[DB_Type::LOCAL];
-
-			auto temp = data_members.value()[DB_Type::REMOTE].to_byte_array();
-
-			g_log.write(Logger::Catagory::INFO) << "Bytes to be written into SPS:\n" << temp;
-
+void setup(ServerInterface& server, SPSConnection& sps)
+{
 #ifndef SPS_NOT_AVAILABLE
-			sps.out<SPSWriteRequest>(data_members.value()[DB_Type::REMOTE].db(), data_members.value()[DB_Type::REMOTE].to_byte_array());
-			data_members.value()[DB_Type::LOCAL].from_byte_array(sps.in<SPSReadRequest>(data_members.value()[DB_Type::LOCAL].db(), data_members.value()[DB_Type::LOCAL].total_byte_size()));
+	g_log.write(Logger::Catagory::INFO) << "Connecting to SPS on port " << g_para[ParaType::SPS_PORT];
+	sps.connect(g_para[ParaType::SPS_PORT]);
 #endif // SPS_NOT_AVAILABLE
 
-			server.post_request(data_members.value()[DB_Type::LOCAL]);
+	g_log.write(Logger::Catagory::INFO) << "Pairing up with host " << server.host();
+	server.pair_up();
+}
+
+void init(ServerInterface& server, SPSConnection& sps)
+{
+	while (true)
+		try
+		{
+			auto members = server.get_request();
+
+			g_log.write(Logger::Catagory::INFO) << "Variables to be read for the init. of mutable variables:\n" << members[DB_Type::MUTABLE];
+			g_log.write(Logger::Catagory::INFO) << "Variables to be read for the init. of constant variables:\n" << members[DB_Type::CONST];
+
+#ifndef SPS_NOT_AVAILABLE
+			ByteArrayConverter().from_byte_array(members[DB_Type::MUTABLE], sps.in(members[DB_Type::MUTABLE].db(), members[DB_Type::MUTABLE].total_byte_size()));
+			ByteArrayConverter().from_byte_array(members[DB_Type::CONST], sps.in(members[DB_Type::CONST].db(), members[DB_Type::CONST].total_byte_size()));
+#else
+			ByteArrayConverter().from_byte_array(members[DB_Type::MUTABLE], ByteArrayConverter().to_byte_array(members[DB_Type::MUTABLE]));
+			ByteArrayConverter().from_byte_array(members[DB_Type::CONST], ByteArrayConverter().to_byte_array(members[DB_Type::CONST]));
+#endif // SPS_NOT_AVAILABLE
+
+			g_log.write(Logger::Catagory::INFO) << "Variables read for mutable:\n" << members[DB_Type::MUTABLE];
+			g_log.write(Logger::Catagory::INFO) << "Variables read for constant:\n" << members[DB_Type::CONST];
+
+			server.post_request(members);
+			break;
 		}
-		catch (const std::exception & e)
+		catch (const std::exception& e)
+		{
+			g_log.write(Logger::Catagory::ERR) << "Initialization failed because: " << e.what();
+			g_log.write(Logger::Catagory::INFO, "Repeating...");
+		}
+		catch (...)
+		{
+			g_log.write(Logger::Catagory::ERR, "Unknown error.");
+			g_log.write(Logger::Catagory::INFO, "Repeating...");
+		}
+}
+
+void runtime(ServerInterface& server, SPSConnection& sps)
+{
+	while (true)
+		try
+		{
+			auto members = server.get_request();
+
+			g_log.write(Logger::Catagory::INFO) << "Variables to be written:\n" << members[DB_Type::MUTABLE];
+			g_log.write(Logger::Catagory::INFO) << "Variables to be read (values will be overwritten):\n" << members[DB_Type::CONST];
+
+			auto data_write = ByteArrayConverter().to_byte_array(members[DB_Type::MUTABLE]);
+			g_log.write(Logger::Catagory::INFO) << "Bytes to be written:\n" << data_write;
+
+#ifndef SPS_NOT_AVAILABLE
+			sps.out(members[DB_Type::MUTABLE].db(), data_write);
+			ByteArrayConverter().from_byte_array(members[DB_Type::CONST], sps.in(members[DB_Type::CONST].db(), members[DB_Type::CONST].total_byte_size()));
+#else
+			ByteArrayConverter().from_byte_array(members[DB_Type::CONST], ByteArrayConverter().to_byte_array(members[DB_Type::CONST]));
+#endif // SPS_NOT_AVAILABLE
+
+			g_log.write(Logger::Catagory::INFO) << "Variables read:\n" << members[DB_Type::CONST];
+
+			server.post_request(members[DB_Type::CONST]);
+		}
+		catch (const std::exception& e)
 		{
 			g_log.write(Logger::Catagory::ERR, e.what());
 			g_log.write(Logger::Catagory::INFO, "Repeating...");
@@ -96,7 +146,4 @@ int main(int argc, char** argv)
 			g_log.write(Logger::Catagory::ERR, "Unknown error.");
 			g_log.write(Logger::Catagory::INFO, "Repeating...");
 		}
-			
-
-	return 0;
 }
