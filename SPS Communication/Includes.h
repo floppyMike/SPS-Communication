@@ -15,12 +15,12 @@
 #define NOMINMAX
 
 #define BCCWIN
-#include <nodavesimple.h>
-#include <setport.h>
-#include <openSocket.h>
+#include "libnodave-0.8.5/nodavesimple.h"
+#include "libnodave-0.8.5/setport.h"
+#include "libnodave-0.8.5/openSocket.h"
 
 #define ASIO_STANDALONE
-#include <asio.hpp>
+#include "asio-1.12.2/include/asio.hpp"
 
 #include "rapidjson/document.h"
 #include "rapidjson/error/en.h"
