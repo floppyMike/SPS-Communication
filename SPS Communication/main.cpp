@@ -15,72 +15,66 @@ To Do
 #include "ServerInterface.h"
 #include "ProgramParameters.h"
 
-//#define SPS_NOT_AVAILABLE
+#define SPS_NOT_AVAILABLE
 
-bool setup(ServerInterface&, SPSConnection&);
+void setup(ServerInterface&, SPSConnection&);
 void init(ServerInterface&, SPSConnection&);
 void runtime(ServerInterface&, SPSConnection&);
 
 int main(int argc, char** argv)
 {
-	g_para.init(argc, argv);
-
-	if (argc == 2)
+	try
 	{
-		std::cerr << "Usage: SPS_Port Host\n"
-			"\"SPS Port\": Port on which the SPS sits.\n"
-			"\"Host\": Server name of machine where ProjectSpyder is running.\n";
+		g_para.init(argc, argv);
+
+		if (argc == 2)
+		{
+			std::cerr << "Usage: SPS_Port Host\n"
+				"\"SPS Port\": Port on which the SPS sits.\n"
+				"\"Host\": Server name of machine where ProjectSpyder is running.\n";
 			//"\"-p\": Looks for file specified and uses its authentication code for the server.\n";
 			//"\"-d\": Launch application in debug mode.\n";
 
+			return 1;
+		}
+
+		std::ios_base::sync_with_stdio(false);
+		std::cout.tie(nullptr);
+
+		asio::io_context io;
+		ServerInterface server;
+		server.io(io);
+		server.host(argc < 3 ? "SpyderHub" : g_para[ParaType::HOST_SERVER]);
+
+		SPSConnection sps;
+
+		setup(server, sps);
+		init(server, sps);
+		runtime(server, sps);
+	}
+	catch (const std::exception& e)
+	{
+		g_log.write(Logger::Catagory::FATAL) << "Error during setup: " << e.what();
 		return 1;
 	}
-
-	std::ios_base::sync_with_stdio(false);
-	std::cout.tie(nullptr);
-
-	asio::io_context io;
-	ServerInterface server;
-	server.io(io);
-	server.host(argc < 3 ? "SpyderHub" : g_para[ParaType::HOST_SERVER]);
-
-	SPSConnection sps;
-
-	if (!setup(server, sps))
+	catch (...)
+	{
+		g_log.write(Logger::Catagory::FATAL, "Unknown error. Exiting.");
 		return 1;
-
-	init(server, sps);
-
-	runtime(server, sps);
-			
+	}
 
 	return 0;
 }
 
-bool setup(ServerInterface& server, SPSConnection& sps)
+void setup(ServerInterface& server, SPSConnection& sps)
 {
-	try
-	{
 #ifndef SPS_NOT_AVAILABLE
-		g_log.write(Logger::Catagory::INFO) << "Connecting to SPS on port " << g_para[ParaType::SPS_PORT];
-		sps.connect(g_para[ParaType::SPS_PORT]);
+	g_log.write(Logger::Catagory::INFO) << "Connecting to SPS on port " << g_para[ParaType::SPS_PORT];
+	sps.connect(g_para[ParaType::SPS_PORT]);
 #endif // SPS_NOT_AVAILABLE
 
-		g_log.write(Logger::Catagory::INFO) << "Pairing up with host " << server.host();
-		server.pair_up();
-	}
-	catch (const std::exception& e)
-	{
-		g_log.write(Logger::Catagory::FATAL, e.what());
-		return 0;
-	}
-	catch (...)
-	{
-		g_log.write(Logger::Catagory::FATAL, "Unknown error while setting up server connection and SPS connection.");
-		return 0;
-	}
-
-	return 1;
+	g_log.write(Logger::Catagory::INFO) << "Pairing up with host " << server.host();
+	server.pair_up();
 }
 
 void init(ServerInterface& server, SPSConnection& sps)
@@ -121,7 +115,7 @@ void init(ServerInterface& server, SPSConnection& sps)
 
 void runtime(ServerInterface& server, SPSConnection& sps)
 {
-	for (auto quit = false; !quit;)
+	while (true)
 		try
 		{
 			auto members = server.get_request();

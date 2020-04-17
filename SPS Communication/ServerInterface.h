@@ -15,6 +15,13 @@ class ServerInterface
 public:
 	ServerInterface() = default;
 
+	//~ServerInterface()
+	//{
+	//	std::ofstream file("prev.auth", std::ios::out | std::ios::binary);
+	//	file << m_authcode << ' ' << 
+
+	//}
+
 	using Connector::io;
 	using Connector::host;
 

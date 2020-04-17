@@ -4,7 +4,7 @@
 
 enum ParaType
 {
-	SPS_PORT, HOST_SERVER, MAX
+	LOCATION, SPS_PORT, HOST_SERVER, MAX
 };
 
 class ProgrammParameters : std::vector<std::string_view>

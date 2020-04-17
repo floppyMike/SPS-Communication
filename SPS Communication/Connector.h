@@ -16,28 +16,15 @@ public:
 	template<typename Builder, typename _Array>
 	std::string query(std::string_view path, const _Array& para)
 	{
-		//Send query multiple times
-		for (char test_case = 1; test_case <= 5; ++test_case)
-			try
-			{
-				Session session(*m_io);
+		Session session(*m_io);
 
-				tcp::resolver r(*m_io);
-				tcp::resolver::query q(m_host.data(), "http");
-				asio::connect(session.socket(), r.resolve(q));
+		tcp::resolver r(*m_io);
+		tcp::resolver::query q(m_host.data(), "http");
+		asio::connect(session.socket(), r.resolve(q));
 
-				auto res = session.query(Builder().build_req(m_host, path, ParamBuilder().build_para(para)));
-				g_log.write(Logger::Catagory::INFO) << "Header of server message:\n" << res.header;
-				return res.content;
-			}
-			catch (const std::exception& e)
-			{
-				g_log.write(Logger::Catagory::ERR, e.what());
-				g_log.write(Logger::Catagory::INFO) << "Case: " << +test_case << " of 5";
-			}
-
-		//Throw error at fail
-		throw std::exception("Server query failed.");
+		auto res = session.query(Builder().build_req(m_host, path, ParamBuilder().build_para(para)));
+		g_log.write(Logger::Catagory::INFO) << "Header of server message:\n" << res.header;
+		return res.content;
 	}
 
 private:

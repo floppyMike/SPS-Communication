@@ -79,12 +79,10 @@
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <Text Include="data.txt">
-      <Filter>Resource Files</Filter>
-    </Text>
-  </ItemGroup>
-  <ItemGroup>
     <None Include="interpret">
+      <Filter>Resource Files</Filter>
+    </None>
+    <None Include="prev.auth">
       <Filter>Resource Files</Filter>
     </None>
   </ItemGroup>

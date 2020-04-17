@@ -55,6 +55,8 @@ auto& guarded_get_section(rj::Value& val, std::string_view sec)
 		throw std::runtime_error("Object \"" + std::string(sec) + "\" not found in the json data.");
 }
 
+
+
 //template<typename _Typ, typename _Parent>
 //class Getter_Setter
 //{

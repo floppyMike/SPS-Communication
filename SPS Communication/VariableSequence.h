@@ -129,5 +129,5 @@ public:
 	}
 };
 
-enum DB_Type { MUTABLE, CONST, MAX };
-using VariableSequences = std::array<VarSequence, MAX>;
+enum DB_Type { MUTABLE, CONST, DB_MAX };
+using VariableSequences = std::array<VarSequence, DB_MAX>;

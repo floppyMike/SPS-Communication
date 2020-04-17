@@ -164,10 +164,8 @@
     <ClInclude Include="VariableSequence.h" />
   </ItemGroup>
   <ItemGroup>
-    <Text Include="data.txt" />
-  </ItemGroup>
-  <ItemGroup>
     <None Include="interpret" />
+    <None Include="prev.auth" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
