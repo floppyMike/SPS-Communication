@@ -4,7 +4,6 @@ To Do
 - improve memory by limiting variable alloc to 4 bytes
 - create reasonable installation
 - documentation
-- use previous authentication
 */
 
 

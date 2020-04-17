@@ -15,20 +15,21 @@ class ServerInterface
 public:
 	ServerInterface() = default;
 
-	//~ServerInterface()
-	//{
-	//	std::ofstream file("prev.auth", std::ios::out | std::ios::binary);
-	//	file << m_authcode << ' ' << 
-
-	//}
-
 	using Connector::io;
 	using Connector::host;
 
 	void pair_up()
 	{
-		auto json = _communticate_<GETBuilder>("/pair.php", std::array{ Parameter{ "type", "raw" } });
-		m_authcode = json.var("authcode").string();
+		if (auto filein = std::ifstream("prevauth", std::ios::binary | std::ios::in); filein)
+			filein >> m_authcode;
+		else
+		{
+			auto json = _communticate_<GETBuilder>("/pair.php", std::array{ Parameter{ "type", "raw" } });
+			m_authcode = json.var("authcode").string();
+			
+			std::ofstream fileout("prevauth", std::ios::binary | std::ios::out);
+			fileout.write(m_authcode.data(), m_authcode.size());
+		}
 	}
 
 	auto get_request()
@@ -74,6 +75,7 @@ private:
 	template<typename Method, typename _Array>
 	JSONRoot _communticate_(std::string_view path, const _Array& arr)
 	{
+		g_log.write(Logger::Catagory::INFO, "Waiting through timeout...");
 		std::this_thread::sleep_until(m_time_till);
 
 		auto json = ResponseHandler().parse_content(this->query<Method>(path, arr));
