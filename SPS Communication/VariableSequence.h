@@ -42,10 +42,11 @@ public:
 	using vec_t::back;
 	using vec_t::empty;
 	using vec_t::size;
-	using vec_t::operator[];
-	using vec_t::operator=;
 	using vec_t::emplace_back;
 	using vec_t::push_back;
+
+	using vec_t::operator[];
+	using vec_t::operator=;
 
 	friend std::ostream& operator<<(std::ostream& o, const VarSequence& v)
 	{
@@ -55,6 +56,11 @@ public:
 			o << i << '\n';
 
 		return o;
+	}
+
+	bool operator==(const VarSequence& s) const noexcept
+	{
+		return std::equal(this->begin(), this->end(), s.begin());
 	}
 
 private:

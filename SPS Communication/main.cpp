@@ -16,9 +16,9 @@ To Do
 
 #define SPS_NOT_AVAILABLE
 
-void setup(ServerInterface&, SPSConnection&);
-void init(ServerInterface&, SPSConnection&);
-void runtime(ServerInterface&, SPSConnection&);
+void setup(ServerInterface<Connector>&, SPSConnection&);
+void init(ServerInterface<Connector>&, SPSConnection&);
+void runtime(ServerInterface<Connector>&, SPSConnection&);
 
 int main(int argc, char** argv)
 {
@@ -41,7 +41,7 @@ int main(int argc, char** argv)
 		std::cout.tie(nullptr);
 
 		asio::io_context io;
-		ServerInterface server;
+		ServerInterface<Connector> server;
 		server.io(io);
 		server.host(argc < 3 ? "SpyderHub" : g_para[ParaType::HOST_SERVER]);
 
@@ -65,7 +65,7 @@ int main(int argc, char** argv)
 	return 0;
 }
 
-void setup(ServerInterface& server, SPSConnection& sps)
+void setup(ServerInterface<Connector>& server, SPSConnection& sps)
 {
 #ifndef SPS_NOT_AVAILABLE
 	g_log.write(Logger::Catagory::INFO) << "Connecting to SPS on port " << g_para[ParaType::SPS_PORT];
@@ -73,15 +73,15 @@ void setup(ServerInterface& server, SPSConnection& sps)
 #endif // SPS_NOT_AVAILABLE
 
 	g_log.write(Logger::Catagory::INFO) << "Pairing up with host " << server.host();
-	server.pair_up();
+	server.pair_up("prevauth");
 }
 
-void init(ServerInterface& server, SPSConnection& sps)
+void init(ServerInterface<Connector>& server, SPSConnection& sps)
 {
 	while (true)
 		try
 		{
-			auto members = server.get_request();
+			auto members = server.get_request("interpret");
 
 			g_log.write(Logger::Catagory::INFO) << "Variables to be read for the init. of mutable variables:\n" << members[DB_Type::MUTABLE];
 			g_log.write(Logger::Catagory::INFO) << "Variables to be read for the init. of constant variables:\n" << members[DB_Type::CONST];
@@ -112,12 +112,12 @@ void init(ServerInterface& server, SPSConnection& sps)
 		}
 }
 
-void runtime(ServerInterface& server, SPSConnection& sps)
+void runtime(ServerInterface<Connector>& server, SPSConnection& sps)
 {
 	while (true)
 		try
 		{
-			auto members = server.get_request();
+			auto members = server.get_request("interpret");
 
 			g_log.write(Logger::Catagory::INFO) << "Variables to be written:\n" << members[DB_Type::MUTABLE];
 			g_log.write(Logger::Catagory::INFO) << "Variables to be read (values will be overwritten):\n" << members[DB_Type::CONST];

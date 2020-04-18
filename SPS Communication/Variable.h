@@ -123,6 +123,11 @@ public:
 		return o;
 	}
 
+	bool operator==(const Variable& v) const noexcept
+	{
+		return m_type == v.m_type && m_name == v.m_name && m_data == v.m_data;
+	}
+
 private:
 	Type m_type;
 	std::string m_name;

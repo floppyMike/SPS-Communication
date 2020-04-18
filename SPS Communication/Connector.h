@@ -43,21 +43,18 @@ public:
 	const auto& host() const noexcept { return m_host; }
 	void host(std::string_view h) noexcept { m_host = h; }
 
-protected:
-	template<typename Builder, typename... Args>
-	std::string _query(Args&&... para)
+	template<typename... Args>
+	std::string query(Args&&...)
 	{
-		return _debug_filereader_("data.txt");
+		std::ifstream in(m_host.data(), std::ios::in | std::ios::binary);
+
+		if (!in)
+			throw std::runtime_error(std::string("File ").append(m_host) + " doesn't exist.");
+
+		return (std::stringstream() << in.rdbuf()).str();
 	}
 
 private:
 	asio::io_context* m_io;
 	std::string_view m_host;		//Must be from main char**
-
-
-	std::string _debug_filereader_(std::string_view name)
-	{
-		std::ifstream in(name.data(), std::ios::in | std::ios::binary);
-		return (std::stringstream() << in.rdbuf()).str();
-	}
 };

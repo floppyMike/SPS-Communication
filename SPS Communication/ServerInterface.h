@@ -8,6 +8,7 @@
 #include "Interpeter.h"
 #include "Stockmanager.h"
 
+template<typename Connector>
 class ServerInterface
 	: Connector
 	, StockManager
@@ -18,21 +19,21 @@ public:
 	using Connector::io;
 	using Connector::host;
 
-	void pair_up()
+	void pair_up(std::string_view authfile)
 	{
-		if (auto filein = std::ifstream("prevauth", std::ios::binary | std::ios::in); filein)
+		if (auto filein = std::ifstream(authfile.data(), std::ios::binary | std::ios::in); filein)
 			filein >> m_authcode;
 		else
 		{
 			auto json = _communticate_<GETBuilder>("/pair.php", std::array{ Parameter{ "type", "raw" } });
 			m_authcode = json.var("authcode").string();
 			
-			std::ofstream fileout("prevauth", std::ios::binary | std::ios::out);
+			std::ofstream fileout(authfile.data(), std::ios::binary | std::ios::out);
 			fileout.write(m_authcode.data(), m_authcode.size());
 		}
 	}
 
-	auto get_request()
+	auto get_request(std::string_view varfile)
 	{
 		auto json = _communticate_<GETBuilder>("/interact.php", std::array{ Parameter{ "type", "raw" }, Parameter{ "authcode", m_authcode }, Parameter{ "requesttype", "GET" } });
 		this->update_stock(json.var("data", "device"));
@@ -44,7 +45,7 @@ public:
 		else
 			inter.prepare_seqs();
 
-		inter.prepare_vars("interpret");
+		inter.prepare_vars(varfile);
 
 		if (auto s = json.var("data").safe_var("data"); s.has_value())
 			inter.fill_vars(s.value());
