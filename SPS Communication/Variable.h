@@ -7,8 +7,8 @@ class Variable
 {
 public:
 	enum Type { BOOL, BYTE, WORD, DWORD, CHAR, INT, DINT, REAL, MAX };
-	static constexpr std::array<size_t, MAX> TYPE_SIZE = { 1, 1, 2, 4, 1, 2, 4, 4 };
-	static constexpr std::array<std::string_view, MAX> TYPE_STR = { "BOOL", "BYTE", "WORD", "DWORD", "CHAR", "INT", "DINT", "REAL" };
+	static constexpr std::array<size_t, Type::MAX> TYPE_SIZE = { 1, 1, 2, 4, 1, 2, 4, 4 };
+	static constexpr std::array<std::string_view, Type::MAX> TYPE_STR = { "BOOL", "BYTE", "WORD", "DWORD", "CHAR", "INT", "DINT", "REAL" };
 
 public:
 	Variable(std::string_view var_name, Type t)
@@ -22,32 +22,32 @@ public:
 	{
 		switch (m_type)
 		{
-		case Variable::BOOL:
-		case Variable::BYTE:
+		case Type::BOOL:
+		case Type::BYTE:
 			fill_var<uint8_t>(_get_num_<uint8_t>(str_val));
 			break;
 
-		case Variable::CHAR:
+		case Type::CHAR:
 			fill_var<int8_t>(_get_num_<int8_t>(str_val));
 			break;
 
-		case Variable::WORD:
+		case Type::WORD:
 			fill_var<uint16_t>(_get_num_<uint16_t>(str_val));
 			break;
 
-		case Variable::INT:
+		case Type::INT:
 			fill_var<int16_t>(_get_num_<int16_t>(str_val));
 			break;
 
-		case Variable::DINT:
+		case Type::DINT:
 			fill_var<int32_t>(_get_num_<int32_t>(str_val));
 			break;
 
-		case Variable::DWORD:
+		case Type::DWORD:
 			fill_var<uint32_t>(_get_num_<uint32_t>(str_val));
 			break;
 
-		case Variable::REAL:
+		case Type::REAL:
 			fill_var<float>(_get_num_<float>(str_val));
 			break;
 
@@ -86,26 +86,26 @@ public:
 
 		switch (m_type)
 		{
-		case Variable::BOOL:
-		case Variable::BYTE:
+		case Type::BOOL:
+		case Type::BYTE:
 			return std::to_string(*reinterpret_cast<const uint8_t*>(&dat.front()));
 
-		case Variable::WORD:
+		case Type::WORD:
 			return std::to_string(*reinterpret_cast<const uint16_t*>(&dat.front()));
 
-		case Variable::DWORD:
+		case Type::DWORD:
 			return std::to_string(*reinterpret_cast<const uint32_t*>(&dat.front()));
 
-		case Variable::CHAR:
+		case Type::CHAR:
 			return std::to_string(*reinterpret_cast<const int8_t*>(&dat.front()));
 
-		case Variable::INT:
+		case Type::INT:
 			return std::to_string(*reinterpret_cast<const int16_t*>(&dat.front()));
 
-		case Variable::DINT:
+		case Type::DINT:
 			return std::to_string(*reinterpret_cast<const int32_t*>(&dat.front()));
 
-		case Variable::REAL:
+		case Type::REAL:
 			return std::to_string(*reinterpret_cast<const float*>(&dat.front()));
 
 		default:

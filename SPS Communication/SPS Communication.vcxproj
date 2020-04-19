@@ -142,6 +142,7 @@
     <ClCompile Include="main.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="ByteArray.h" />
     <ClInclude Include="Connector.h" />
     <ClInclude Include="Interpeter.h" />
     <ClInclude Include="JSON.h" />

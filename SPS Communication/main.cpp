@@ -13,6 +13,7 @@ To Do
 #include "SPSIO.h"
 #include "ServerInterface.h"
 #include "ProgramParameters.h"
+#include "ByteArray.h"
 
 #define SPS_NOT_AVAILABLE
 
