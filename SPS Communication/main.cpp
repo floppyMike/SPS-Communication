@@ -15,36 +15,36 @@ To Do
 #include "ProgramParameters.h"
 #include "ByteArray.h"
 
-#define SPS_NOT_AVAILABLE
+//#define SPS_NOT_AVAILABLE
+#define SERVER_NOT_AVAILABLE
 
-void setup(ServerInterface<Connector>&, SPSConnection&);
-void init(ServerInterface<Connector>&, SPSConnection&);
-void runtime(ServerInterface<Connector>&, SPSConnection&);
+void setup(ServerInterface<ConnectorDEBUG>&, SPSConnection&);
+void init(ServerInterface<ConnectorDEBUG>&, SPSConnection&);
+void runtime(ServerInterface<ConnectorDEBUG>&, SPSConnection&);
 
 int main(int argc, char** argv)
 {
+	//Handle command parameters
+	if (argc == 2)
+	{
+		std::cerr << "Usage: SPS_Port Host\n"
+			"\"SPS Port\": Port on which the SPS sits.\n"
+			"\"Host\": Server name of machine where ProjectSpyder is running.\n";
+		//"\"-p\": Looks for file specified and uses its authentication code for the server.\n";
+		//"\"-d\": Launch application in debug mode.\n";
+
+		return 1;
+	}
+	g_para.init(argc, argv);
+
+	//Speed up io
+	std::ios_base::sync_with_stdio(false);
+	std::cout.tie(nullptr);
+
 	try
 	{
-		g_para.init(argc, argv);
-
-		if (argc == 2)
-		{
-			std::cerr << "Usage: SPS_Port Host\n"
-				"\"SPS Port\": Port on which the SPS sits.\n"
-				"\"Host\": Server name of machine where ProjectSpyder is running.\n";
-			//"\"-p\": Looks for file specified and uses its authentication code for the server.\n";
-			//"\"-d\": Launch application in debug mode.\n";
-
-			return 1;
-		}
-
-		std::ios_base::sync_with_stdio(false);
-		std::cout.tie(nullptr);
-
 		asio::io_context io;
-		ServerInterface<Connector> server;
-		server.io(io);
-		server.host(argc < 3 ? "SpyderHub" : g_para[ParaType::HOST_SERVER]);
+		ServerInterface<ConnectorDEBUG> server(&io, g_para[ParaType::HOST_SERVER]);
 
 		SPSConnection sps;
 
@@ -66,39 +66,50 @@ int main(int argc, char** argv)
 	return 0;
 }
 
-void setup(ServerInterface<Connector>& server, SPSConnection& sps)
+void setup(ServerInterface<ConnectorDEBUG>& server, SPSConnection& sps)
 {
 #ifndef SPS_NOT_AVAILABLE
-	g_log.write(Logger::Catagory::INFO) << "Connecting to SPS on port " << g_para[ParaType::SPS_PORT];
 	sps.connect(g_para[ParaType::SPS_PORT]);
 #endif // SPS_NOT_AVAILABLE
 
-	g_log.write(Logger::Catagory::INFO) << "Pairing up with host " << server.host();
+#ifdef SERVER_NOT_AVAILABLE
+	server.host("debugpair.txt");
+#endif // !SERVER_NOT_AVAILABLE
+
 	server.pair_up("prevauth");
 }
 
-void init(ServerInterface<Connector>& server, SPSConnection& sps)
+void init(ServerInterface<ConnectorDEBUG>& server, SPSConnection& sps)
 {
 	while (true)
 		try
 		{
-			auto members = server.get_request("interpret");
+#ifdef SERVER_NOT_AVAILABLE
+			server.host("debugdata.txt");
+#endif // !SERVER_NOT_AVAILABLE
 
-			g_log.write(Logger::Catagory::INFO) << "Variables to be read for the init. of mutable variables:\n" << members[DB_Type::MUTABLE];
-			g_log.write(Logger::Catagory::INFO) << "Variables to be read for the init. of constant variables:\n" << members[DB_Type::CONST];
+			auto json = server.get_request();
+
+			auto vars = Interpreter().interpret_json(json.var("data"), "interpret.txt");
+
+			g_log.write(Logger::Catagory::INFO) << "Variables to be read for the init. of mutable variables:\n" << vars[DB_Type::MUTABLE];
+			g_log.write(Logger::Catagory::INFO) << "Variables to be read for the init. of constant variables:\n" << vars[DB_Type::CONST];
 
 #ifndef SPS_NOT_AVAILABLE
-			ByteArrayConverter().from_byte_array(members[DB_Type::MUTABLE], sps.in(members[DB_Type::MUTABLE].db(), members[DB_Type::MUTABLE].total_byte_size()));
-			ByteArrayConverter().from_byte_array(members[DB_Type::CONST], sps.in(members[DB_Type::CONST].db(), members[DB_Type::CONST].total_byte_size()));
+			ByteArrayConverter().from_byte_array(vars[DB_Type::MUTABLE], sps.in(vars[DB_Type::MUTABLE].db(), vars[DB_Type::MUTABLE].total_byte_size()));
+			ByteArrayConverter().from_byte_array(vars[DB_Type::CONST], sps.in(vars[DB_Type::CONST].db(), vars[DB_Type::CONST].total_byte_size()));
 #else
-			ByteArrayConverter().from_byte_array(members[DB_Type::MUTABLE], ByteArrayConverter().to_byte_array(members[DB_Type::MUTABLE]));
-			ByteArrayConverter().from_byte_array(members[DB_Type::CONST], ByteArrayConverter().to_byte_array(members[DB_Type::CONST]));
+			ByteArrayConverter().from_byte_array(vars[DB_Type::MUTABLE], ByteArrayConverter().to_byte_array(vars[DB_Type::MUTABLE]));
+			ByteArrayConverter().from_byte_array(vars[DB_Type::CONST], ByteArrayConverter().to_byte_array(vars[DB_Type::CONST]));
 #endif // SPS_NOT_AVAILABLE
 
-			g_log.write(Logger::Catagory::INFO) << "Variables read for mutable:\n" << members[DB_Type::MUTABLE];
-			g_log.write(Logger::Catagory::INFO) << "Variables read for constant:\n" << members[DB_Type::CONST];
+			g_log.write(Logger::Catagory::INFO) << "Variables read for mutable:\n" << vars[DB_Type::MUTABLE];
+			g_log.write(Logger::Catagory::INFO) << "Variables read for constant:\n" << vars[DB_Type::CONST];
 
-			server.post_request(members);
+#ifdef SERVER_NOT_AVAILABLE
+			server.host("debugresult.txt");
+#endif // !SERVER_NOT_AVAILABLE
+			server.post_request(vars);
 			break;
 		}
 		catch (const std::exception& e)
@@ -113,29 +124,39 @@ void init(ServerInterface<Connector>& server, SPSConnection& sps)
 		}
 }
 
-void runtime(ServerInterface<Connector>& server, SPSConnection& sps)
+void runtime(ServerInterface<ConnectorDEBUG>& server, SPSConnection& sps)
 {
 	while (true)
 		try
 		{
-			auto members = server.get_request("interpret");
+#ifdef SERVER_NOT_AVAILABLE
+		server.host("debugdata.txt");
+#endif // !SERVER_NOT_AVAILABLE
 
-			g_log.write(Logger::Catagory::INFO) << "Variables to be written:\n" << members[DB_Type::MUTABLE];
-			g_log.write(Logger::Catagory::INFO) << "Variables to be read (values will be overwritten):\n" << members[DB_Type::CONST];
+			auto json = server.get_request();
 
-			auto data_write = ByteArrayConverter().to_byte_array(members[DB_Type::MUTABLE]);
+			auto vars = Interpreter().interpret_json(json.var("data"), "interpret.txt");
+
+			g_log.write(Logger::Catagory::INFO) << "Variables to be written:\n" << vars[DB_Type::MUTABLE];
+			g_log.write(Logger::Catagory::INFO) << "Variables to be read (values will be overwritten):\n" << vars[DB_Type::CONST];
+
+			auto data_write = ByteArrayConverter().to_byte_array(vars[DB_Type::MUTABLE]);
 			g_log.write(Logger::Catagory::INFO) << "Bytes to be written:\n" << data_write;
 
 #ifndef SPS_NOT_AVAILABLE
-			sps.out(members[DB_Type::MUTABLE].db(), data_write);
-			ByteArrayConverter().from_byte_array(members[DB_Type::CONST], sps.in(members[DB_Type::CONST].db(), members[DB_Type::CONST].total_byte_size()));
+			sps.out(vars[DB_Type::MUTABLE].db(), data_write);
+			ByteArrayConverter().from_byte_array(vars[DB_Type::CONST], sps.in(vars[DB_Type::CONST].db(), vars[DB_Type::CONST].total_byte_size()));
 #else
-			ByteArrayConverter().from_byte_array(members[DB_Type::CONST], ByteArrayConverter().to_byte_array(members[DB_Type::CONST]));
+			ByteArrayConverter().from_byte_array(vars[DB_Type::CONST], ByteArrayConverter().to_byte_array(vars[DB_Type::CONST]));
 #endif // SPS_NOT_AVAILABLE
 
-			g_log.write(Logger::Catagory::INFO) << "Variables read:\n" << members[DB_Type::CONST];
+			g_log.write(Logger::Catagory::INFO) << "Variables read:\n" << vars[DB_Type::CONST];
 
-			server.post_request(members[DB_Type::CONST]);
+#ifdef SERVER_NOT_AVAILABLE
+			server.host("debugresult.txt");
+#endif // !SERVER_NOT_AVAILABLE
+
+			server.post_request(vars[DB_Type::CONST]);
 		}
 		catch (const std::exception& e)
 		{

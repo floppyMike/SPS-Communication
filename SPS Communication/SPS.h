@@ -73,6 +73,8 @@ public:
 
 	void connect(std::string_view port, int protocol = daveProtoISOTCP)
 	{
+		g_log.write(Logger::Catagory::INFO) << "Connecting to SPS on port " << port;
+
 		_open_socket_(port);
 		_init_interface_(protocol);
 		_init_adapter_();

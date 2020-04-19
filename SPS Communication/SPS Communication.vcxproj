@@ -160,9 +160,6 @@
     <ClInclude Include="Variable.h" />
     <ClInclude Include="VariableSequence.h" />
   </ItemGroup>
-  <ItemGroup>
-    <None Include="interpret" />
-  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>

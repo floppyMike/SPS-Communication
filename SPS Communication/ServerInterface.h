@@ -16,15 +16,25 @@ class ServerInterface
 public:
 	ServerInterface() = default;
 
-	using Connector::io;
+	ServerInterface(asio::io_context* io, std::string_view host)
+		: Connector(io, host)
+	{
+	}
+
 	using Connector::host;
+	using Connector::io;
 
 	void pair_up(std::string_view authfile)
 	{
 		if (auto filein = std::ifstream(authfile.data(), std::ios::binary | std::ios::in); filein)
+		{
+			g_log.write(Logger::Catagory::INFO) << "Pairing up using file: " << authfile;
 			filein >> m_authcode;
+		}
 		else
 		{
+			g_log.write(Logger::Catagory::INFO, "Pairing using host");
+
 			auto json = _communticate_<GETBuilder>("/pair.php", std::array{ Parameter{ "type", "raw" } });
 			m_authcode = json.var("authcode").string();
 			
@@ -33,24 +43,12 @@ public:
 		}
 	}
 
-	auto get_request(std::string_view varfile)
+	auto get_request()
 	{
 		auto json = _communticate_<GETBuilder>("/interact.php", std::array{ Parameter{ "type", "raw" }, Parameter{ "authcode", m_authcode }, Parameter{ "requesttype", "GET" } });
 		this->update_stock(json.var("data", "device"));
 
-		Interpreter inter;
-
-		if (auto s = json.var("data").safe_var("settings"); s.has_value())
-			inter.prepare_seqs(s.value());
-		else
-			inter.prepare_seqs();
-
-		inter.prepare_vars(varfile);
-
-		if (auto s = json.var("data").safe_var("data"); s.has_value())
-			inter.fill_vars(s.value());
-
-		return inter.give_seqs();
+		return json;
 	}
 
 	void post_request(const VariableSequences& seq)

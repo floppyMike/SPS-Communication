@@ -7,14 +7,15 @@ enum ParaType
 	LOCATION, SPS_PORT, HOST_SERVER, MAX
 };
 
-class ProgrammParameters : std::vector<std::string_view>
+class ProgrammParameters
 {
 public:
-	using vec_t = std::vector<std::string_view>;
-
 	ProgrammParameters() = default;
 
-	using vec_t::operator[];
+	const char* operator[](size_t i)
+	{
+		return m_arr[i];
+	}
 
 	//template<typename _Array>
 	//bool init(int arc, char** argv, const _Array& opt, int must = 0)
@@ -36,8 +37,13 @@ public:
 
 	void init(int arc, char** argv)
 	{
-		this->assign(argv, argv + arc);
+		m_arr = argv;
+		m_size = arc;
 	}
+
+private:
+	const char* const* m_arr;
+	size_t m_size;
 };
 
 namespace

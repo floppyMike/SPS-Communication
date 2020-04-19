@@ -10,6 +10,21 @@ class Interpreter
 public:
 	Interpreter() = default;
 
+	auto&& interpret_json(JSONValue root_data, std::string_view varfile)
+	{
+		if (auto s = root_data.safe_var("settings"); s.has_value())
+			prepare_seqs(s.value());
+		else
+			prepare_seqs();
+
+		prepare_vars(varfile);
+
+		if (auto s = root_data.safe_var("data"); s.has_value())
+			fill_vars(s.value());
+
+		return std::move(m_seqs);
+	}
+
 	void prepare_seqs(JSONValue settings)
 	{
 		for (auto& i : settings)
@@ -28,7 +43,7 @@ public:
 
 	void prepare_vars(std::string_view filename)
 	{
-		std::ifstream file_in(filename.data(), std::ios::in | std::ios::binary);
+		std::ifstream file_in(filename.data(), std::ios::in);
 
 		while (file_in.ignore(std::numeric_limits<std::streamsize>::max(), '#'))
 		{
@@ -46,15 +61,23 @@ public:
 	void fill_vars(JSONValue data_inner)
 	{
 		for (auto iter_seq = m_seqs[DB_Type::MUTABLE].begin(); iter_seq != m_seqs[DB_Type::MUTABLE].end(); ++iter_seq)
+		{
+			bool exists_f = false;
+
 			for (auto& member : data_inner)
 				if (iter_seq->name() == member.name.GetString())
 				{
+					exists_f = true;
 					iter_seq->fill_var(JSONValue(member.value).string());
 					break;
 				}
+
+			if (!exists_f)
+				g_log.write(Logger::Catagory::WARN) << "Variable \"" << iter_seq->name() << "\" not found";
+		}
 	}
 
-	auto&& give_seqs() noexcept { return std::move(m_seqs); }
+	VariableSequences&& give_seqs() noexcept { return std::move(m_seqs); }
 
 private:
 	VariableSequences m_seqs;

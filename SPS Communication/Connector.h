@@ -8,10 +8,19 @@ class Connector
 public:
 	Connector() = default;
 
-	void io(asio::io_context& i) noexcept { m_io = &i; }
+	Connector(asio::io_context* io)
+		: m_io(io)
+	{
+	}
 
-	const auto& host() const noexcept { return m_host; }
-	void host(std::string_view h) noexcept { m_host = h; }
+	Connector(asio::io_context* io, std::string_view host)
+		: m_io(io)
+		, m_host(host)
+	{
+	}
+
+	void io(asio::io_context& i) noexcept { m_io = &i; }
+	void host(std::string_view host) noexcept { m_host = host; }
 
 	template<typename Builder, typename _Array>
 	std::string query(std::string_view path, const _Array& para)
@@ -23,13 +32,14 @@ public:
 		asio::connect(session.socket(), r.resolve(q));
 
 		auto res = session.query(Builder().build_req(m_host, path, ParamBuilder().build_para(para)));
-		g_log.write(Logger::Catagory::INFO) << "Header of server message:\n" << res.header;
+
+		g_log.write(Logger::Catagory::INFO) << "Queried " << m_host;
 		return res.content;
 	}
 
 private:
 	asio::io_context* m_io = nullptr;
-	std::string_view m_host;		//Must be from main char**
+	std::string_view m_host;
 };
 
 
@@ -38,23 +48,41 @@ class ConnectorDEBUG
 public:
 	ConnectorDEBUG() = default;
 
+	ConnectorDEBUG(asio::io_context* io)
+		: m_io(io)
+	{
+	}
+
+	ConnectorDEBUG(asio::io_context* io, std::string_view host)
+		: m_io(io)
+		, m_host(host)
+	{
+	}
+
+	void host(std::string_view host) noexcept { m_host = host; }
 	void io(asio::io_context& i) noexcept { m_io = &i; }
 
-	const auto& host() const noexcept { return m_host; }
-	void host(std::string_view h) noexcept { m_host = h; }
-
-	template<typename... Args>
-	std::string query(Args&&...)
+	template<typename Builder, typename _Array>
+	std::string query(std::string_view path, const _Array& para)
 	{
-		std::ifstream in(m_host.data(), std::ios::in | std::ios::binary);
-
-		if (!in)
-			throw std::runtime_error(std::string("File ").append(m_host) + " doesn't exist.");
-
-		return (std::stringstream() << in.rdbuf()).str();
+		if constexpr (std::is_same_v<Builder, GETBuilder>)
+		{
+			std::ifstream in(m_host.data(), std::ios::in | std::ios::binary);
+			if (!in)
+				throw std::runtime_error(std::string("File ").append(m_host) + " doesn't exist.");
+			return (std::stringstream() << in.rdbuf()).str();
+		}
+		else
+		{
+			std::ofstream out(m_host.data(), std::ios::out | std::ios::binary);
+			if (!out)
+				throw std::runtime_error(std::string("File ").append(m_host) + " couldn't open.");
+			out << ParamBuilder().build_para(para);
+			return "#START\n#DATA\n{\"requesttimeout\": \"0\"}\n#END";
+		}
 	}
 
 private:
 	asio::io_context* m_io;
-	std::string_view m_host;		//Must be from main char**
+	std::string_view m_host;
 };

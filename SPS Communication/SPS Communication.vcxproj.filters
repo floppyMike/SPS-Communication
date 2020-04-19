@@ -81,9 +81,4 @@
       <Filter>Header Files\Processing</Filter>
     </ClInclude>
   </ItemGroup>
-  <ItemGroup>
-    <None Include="interpret">
-      <Filter>Resource Files</Filter>
-    </None>
-  </ItemGroup>
 </Project>
