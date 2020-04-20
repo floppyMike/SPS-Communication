@@ -15,8 +15,8 @@ To Do
 #include "ProgramParameters.h"
 #include "ByteArray.h"
 
-//#define SPS_NOT_AVAILABLE
-#define SERVER_NOT_AVAILABLE
+#define SPS_NOT_AVAILABLE
+//#define SERVER_NOT_AVAILABLE
 
 void setup(ServerInterface<ConnectorDEBUG>&, SPSConnection&);
 void init(ServerInterface<ConnectorDEBUG>&, SPSConnection&);
