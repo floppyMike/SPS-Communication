@@ -94,8 +94,8 @@ public:
 	}
 
 private:
-	daveInterface* m_interface;
-	daveConnection* m_connection;
+	daveInterface* m_interface = nullptr;
+	daveConnection* m_connection = nullptr;
 	_daveOSserialType m_serial;
 
 	void _open_socket_(std::string_view port)
