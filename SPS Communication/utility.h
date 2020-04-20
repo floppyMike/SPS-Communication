@@ -16,10 +16,27 @@ private:
 template<typename T>
 std::optional<T> str_to_num(std::string_view str) noexcept
 {
-	T temp;
-	if (str.empty() || std::from_chars(str.data(), str.data() + str.size(), temp).ec != std::errc())
+	if (T temp; str.empty() || [&temp, &str]() -> bool
+		{
+			if constexpr (std::is_floating_point_v<T>) //g++ and clang++ don't support floating point from_chars
+				if constexpr (std::is_same_v<T, float>)
+					try
+					{
+						temp = std::stof(std::string(str));
+						return false;
+					}
+					catch (const std::exception&)
+					{
+						return true;
+					}
+				else
+					static_assert(false, "Only floating point number float is supported.");
+			else
+				return std::from_chars(str.data(), str.data() + str.size(), temp).ec != std::errc();
+		}())
 		return std::nullopt;
-	return temp;
+	else
+		return temp;
 }
 
 template<typename _T>

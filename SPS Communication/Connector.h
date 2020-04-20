@@ -70,7 +70,10 @@ public:
 			std::ifstream in(m_host.data(), std::ios::in | std::ios::binary);
 			if (!in)
 				throw std::runtime_error(std::string("File ").append(m_host) + " doesn't exist.");
-			return (std::stringstream() << in.rdbuf()).str();
+
+			std::stringstream s;
+			s << in.rdbuf();
+			return s.str();
 		}
 		else
 		{

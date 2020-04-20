@@ -83,8 +83,13 @@ private:
 	{
 		const auto t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 		char buf[21];
+
 		tm time;
+#ifdef __linux__
+		gmtime_r(&t, &time);
+#elif _WIN32
 		gmtime_s(&time, &t);
+#endif // __linux__
 		std::strftime(buf, sizeof buf, "%Y-%m-%d %H:%M:%S ", &time);
 
 		_write_buffer_(buf, sizeof buf);

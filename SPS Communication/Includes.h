@@ -19,8 +19,10 @@
 #include "setport.h"
 #include "openSocket.h"
 
-//Remove uc define
+//Remove typename clashes
 #undef uc
+#undef us
+#undef u32
 
 #define ASIO_STANDALONE
 #include "asio.hpp"

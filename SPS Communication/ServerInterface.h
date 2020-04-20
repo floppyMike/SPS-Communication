@@ -77,9 +77,9 @@ private:
 		g_log.write(Logger::Catagory::INFO, "Waiting through timeout...");
 		std::this_thread::sleep_until(m_time_till);
 
-		auto json = ResponseHandler().parse_content(this->query<Method>(path, arr));
+		auto json = ResponseHandler().parse_content(this->template query<Method>(path, arr));
 
-		const auto timeout = std::chrono::seconds(json.var("requesttimeout").num<unsigned int>());
+		const auto timeout = std::chrono::seconds(json.var("requesttimeout").template num<unsigned int>());
 		m_time_till = std::chrono::steady_clock::now() + timeout;
 		g_log.write(Logger::Catagory::INFO) << "Timeout duration: " << timeout.count() << 's';
 
