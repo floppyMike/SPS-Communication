@@ -30,7 +30,10 @@ std::optional<T> str_to_num(std::string_view str) noexcept
 						return true;
 					}
 				else
-					static_assert(false, "Only floating point number float is supported.");
+				{
+					assert(false && "Only floating point number float is supported.");
+					return true;
+				}
 			else
 				return std::from_chars(str.data(), str.data() + str.size(), temp).ec != std::errc();
 		}())
