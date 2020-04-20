@@ -1,1 +1,47 @@
-type=raw&requesttype=PUT&authcode=Ass&data={"settings":{"const":1,"mutable":2},"data":{"mbit":"0","mbyte":"45","mword":"425","mdword":"56567","mchar":"4","mint":"324","mdint":"-23543","mreal":"7.800000","cbit":"0","cbyte":"0","cword":"0","cdword":"0","cchar":"0","cint":"0","cdint":"0","creal":"0.000000"},"usermodifiabledata":["mbit","mbyte","mword","mdword","mchar","mint","mdint","mreal"],"friendly":{"settingsvar":{"const":"Database number for the constant variables.","mutable":"Database number for the mutable variables."},"datavar":{"mbit":"mbit","mbyte":"mbyte","mword":"mword","mdword":"mdword","mchar":"mchar","mint":"mint","mdint":"mdint","mreal":"mreal","cbit":"cbit","cbyte":"cbyte","cword":"cword","cdword":"cdword","cchar":"cchar","cint":"cint","cdint":"cdint","creal":"creal"},"datavalue":{"mbit":"0","mbyte":"45","mword":"425","mdword":"56567","mchar":"4","mint":"324","mdint":"-23543","mreal":"7.800000","cbit":"0","cbyte":"0","cword":"0","cdword":"0","cchar":"0","cint":"0","cdint":"0","creal":"0.000000"},"type":"SPS"},"preferredupdatetime":10,"device":{"type":"null","name":"ASSSSSSSSSS"}}
+#START
+#DEBUG
+Hello There
+#DATA
+{
+	"requesttimeout": "5",
+	"data": {
+		"settings": {
+			"const": "10",
+			"mutable": "21"
+		},
+		"data": {
+			"cbit": "1",
+			"cbyte": "34",
+			"cword": "433",
+			"cdword": "43534",
+			"cchar": "34",
+			"cint": "-45",
+			"cdint": "-4634",
+			"creal": "5.6",
+			"mbit": "1",
+			"mbyte": "34",
+			"mword": "433",
+			"mdword": "43534",
+			"mchar": "34",
+			"mint": "-45",
+			"mdint": "-4634",
+			"mreal": "5.6"
+		},
+		"usermodifiabledata": ["word", "int"],
+		"friendly": {
+			"settingsvar": {
+			},
+			"datavar": {
+			},
+			"datavalue": {
+			},
+			"type": "SPS"
+		},
+		"preferredupdatetime": 10,
+		"device": {
+			"type": "null", 
+			"name": "ASSSSSSSSSS"
+		}
+	}
+}
+#END

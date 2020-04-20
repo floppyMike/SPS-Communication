@@ -107,7 +107,7 @@ private:
 
 	void _init_interface_(int protocol)
 	{
-		m_interface = daveNewInterface(m_serial, ::_strdup("IF1"), 0, protocol, daveSpeed187k);
+		m_interface = daveNewInterface(m_serial, const_cast<char*>("IF1"), 0, protocol, daveSpeed187k);
 		daveSetTimeout(m_interface, 5000000);
 	}
 

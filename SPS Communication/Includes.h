@@ -12,15 +12,18 @@
 #include <array>
 #include <ctime>
 
+//Remove Max define
 #define NOMINMAX
 
-#define BCCWIN
-#include "libnodave-0.8.5/nodavesimple.h"
-#include "libnodave-0.8.5/setport.h"
-#include "libnodave-0.8.5/openSocket.h"
+#include "nodavesimple.h"
+#include "setport.h"
+#include "openSocket.h"
+
+//Remove uc define
+#undef uc
 
 #define ASIO_STANDALONE
-#include "asio-1.12.2/include/asio.hpp"
+#include "asio.hpp"
 
 #include "rapidjson/document.h"
 #include "rapidjson/error/en.h"
