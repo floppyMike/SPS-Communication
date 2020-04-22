@@ -15,7 +15,7 @@ To Do
 #include "ProgramParameters.h"
 #include "ByteArray.h"
 
-#define SPS_NOT_AVAILABLE
+//#define SPS_NOT_AVAILABLE
 //#define SERVER_NOT_AVAILABLE
 
 void setup(ServerInterface<Connector>&, SPSConnection&);
@@ -25,7 +25,7 @@ void runtime(ServerInterface<Connector>&, SPSConnection&);
 int main(int argc, char** argv)
 {
 	//Handle command parameters
-	if (argc == 2)
+	if (argc != 3)
 	{
 		std::cerr << "Usage: SPS_Port Host\n"
 			"\"SPS Port\": Port on which the SPS sits.\n"
