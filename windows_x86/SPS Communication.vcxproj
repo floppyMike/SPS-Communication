@@ -78,7 +78,9 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PreprocessorDefinitions>BCCWIN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\libnodave;..\rapidjson\include;..\asio\asio\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\libnodave;..\rapidjson\include;..\asio\asio\include;..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <EnforceTypeConversionRules>true</EnforceTypeConversionRules>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -94,7 +96,9 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PreprocessorDefinitions>BCCWIN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\libnodave;..\rapidjson\include;..\asio\asio\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\libnodave;..\rapidjson\include;..\asio\asio\include;..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <EnforceTypeConversionRules>true</EnforceTypeConversionRules>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -112,7 +116,9 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PreprocessorDefinitions>BCCWIN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\libnodave;..\rapidjson\include;..\asio\asio\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\libnodave;..\rapidjson\include;..\asio\asio\include;..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <EnforceTypeConversionRules>true</EnforceTypeConversionRules>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -132,7 +138,9 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpp17</LanguageStandard>
       <PreprocessorDefinitions>BCCWIN;%(PreprocessorDefinitions)</PreprocessorDefinitions>
-      <AdditionalIncludeDirectories>..\libnodave;..\rapidjson\include;..\asio\asio\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\libnodave;..\rapidjson\include;..\asio\asio\include;..\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <EnforceTypeConversionRules>true</EnforceTypeConversionRules>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -143,26 +151,26 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="main.cpp" />
+    <ClCompile Include="..\src\main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="ByteArray.h" />
-    <ClInclude Include="Connector.h" />
-    <ClInclude Include="Interpeter.h" />
-    <ClInclude Include="JSON.h" />
-    <ClInclude Include="Logging.h" />
-    <ClInclude Include="Parser.h" />
-    <ClInclude Include="ProgramParameters.h" />
-    <ClInclude Include="Response.h" />
-    <ClInclude Include="Query.h" />
-    <ClInclude Include="Includes.h" />
-    <ClInclude Include="ServerInterface.h" />
-    <ClInclude Include="SPS.h" />
-    <ClInclude Include="SPSIO.h" />
-    <ClInclude Include="Stockmanager.h" />
-    <ClInclude Include="utility.h" />
-    <ClInclude Include="Variable.h" />
-    <ClInclude Include="VariableSequence.h" />
+    <ClInclude Include="..\include\ByteArray.h" />
+    <ClInclude Include="..\include\Connector.h" />
+    <ClInclude Include="..\include\Includes.h" />
+    <ClInclude Include="..\include\Interpeter.h" />
+    <ClInclude Include="..\include\JSON.h" />
+    <ClInclude Include="..\include\Logging.h" />
+    <ClInclude Include="..\include\Parser.h" />
+    <ClInclude Include="..\include\ProgramParameters.h" />
+    <ClInclude Include="..\include\Query.h" />
+    <ClInclude Include="..\include\Response.h" />
+    <ClInclude Include="..\include\ServerInterface.h" />
+    <ClInclude Include="..\include\SPS.h" />
+    <ClInclude Include="..\include\SPSIO.h" />
+    <ClInclude Include="..\include\Stockmanager.h" />
+    <ClInclude Include="..\include\utility.h" />
+    <ClInclude Include="..\include\Variable.h" />
+    <ClInclude Include="..\include\VariableSequence.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

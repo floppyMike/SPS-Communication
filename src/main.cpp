@@ -15,17 +15,17 @@ To Do
 #include "ProgramParameters.h"
 #include "ByteArray.h"
 
-#define SPS_NOT_AVAILABLE
+//#define SPS_NOT_AVAILABLE
 //#define SERVER_NOT_AVAILABLE
 
-void setup(ServerInterface<ConnectorDEBUG>&, SPSConnection&);
-void init(ServerInterface<ConnectorDEBUG>&, SPSConnection&);
-void runtime(ServerInterface<ConnectorDEBUG>&, SPSConnection&);
+void setup(ServerInterface<Connector>&, SPSConnection&);
+void init(ServerInterface<Connector>&, SPSConnection&);
+void runtime(ServerInterface<Connector>&, SPSConnection&);
 
 int main(int argc, char** argv)
 {
 	//Handle command parameters
-	if (argc == 2)
+	if (argc != 3)
 	{
 		std::cerr << "Usage: SPS_Port Host\n"
 			"\"SPS Port\": Port on which the SPS sits.\n"
@@ -44,7 +44,7 @@ int main(int argc, char** argv)
 	try
 	{
 		asio::io_context io;
-		ServerInterface<ConnectorDEBUG> server(&io, g_para[ParaType::HOST_SERVER]);
+		ServerInterface<Connector> server(&io, g_para[ParaType::HOST_SERVER]);
 
 		SPSConnection sps;
 
@@ -66,7 +66,7 @@ int main(int argc, char** argv)
 	return 0;
 }
 
-void setup(ServerInterface<ConnectorDEBUG>& server, SPSConnection& sps)
+void setup(ServerInterface<Connector>& server, SPSConnection& sps)
 {
 #ifndef SPS_NOT_AVAILABLE
 	sps.connect(g_para[ParaType::SPS_PORT]);
@@ -79,7 +79,7 @@ void setup(ServerInterface<ConnectorDEBUG>& server, SPSConnection& sps)
 	server.pair_up("prevauth");
 }
 
-void init(ServerInterface<ConnectorDEBUG>& server, SPSConnection& sps)
+void init(ServerInterface<Connector>& server, SPSConnection& sps)
 {
 	while (true)
 		try
@@ -116,15 +116,17 @@ void init(ServerInterface<ConnectorDEBUG>& server, SPSConnection& sps)
 		{
 			g_log.write(Logger::Catagory::ERR) << "Initialization failed because: " << e.what();
 			g_log.write(Logger::Catagory::INFO, "Repeating...");
+			std::this_thread::sleep_for(1s);
 		}
 		catch (...)
 		{
 			g_log.write(Logger::Catagory::ERR, "Unknown error.");
 			g_log.write(Logger::Catagory::INFO, "Repeating...");
+			std::this_thread::sleep_for(1s);
 		}
 }
 
-void runtime(ServerInterface<ConnectorDEBUG>& server, SPSConnection& sps)
+void runtime(ServerInterface<Connector>& server, SPSConnection& sps)
 {
 	while (true)
 		try
@@ -162,10 +164,12 @@ void runtime(ServerInterface<ConnectorDEBUG>& server, SPSConnection& sps)
 		{
 			g_log.write(Logger::Catagory::ERR, e.what());
 			g_log.write(Logger::Catagory::INFO, "Repeating...");
+			std::this_thread::sleep_for(1s);
 		}
 		catch (...)
 		{
 			g_log.write(Logger::Catagory::ERR, "Unknown error.");
 			g_log.write(Logger::Catagory::INFO, "Repeating...");
+			std::this_thread::sleep_for(1s);
 		}
 }
