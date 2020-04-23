@@ -72,6 +72,7 @@ public:
 
 		_write_buffer_(str, amount);
 		_write_buffer_("\n");
+		std::clog.flush();
 
 		return *this;
 	}
