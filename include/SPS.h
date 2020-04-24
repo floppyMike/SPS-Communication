@@ -71,11 +71,11 @@ public:
 			daveDisconnectAdapter(m_interface);
 	}
 
-	void connect(std::string_view port, int protocol = daveProtoISOTCP)
+	void connect(std::string_view ip, std::string_view port, int protocol = daveProtoISOTCP)
 	{
 		g_log.write(Logger::Catagory::INFO) << "Connecting to SPS on port " << port;
 
-		_open_socket_(port);
+		_open_socket_(ip, port);
 		_init_interface_(protocol);
 		_init_adapter_();
 		_init_connection_();
@@ -98,11 +98,11 @@ private:
 	daveConnection* m_connection = nullptr;
 	_daveOSserialType m_serial;
 
-	void _open_socket_(std::string_view port)
+	void _open_socket_(std::string_view ip, std::string_view port)
 	{
-		m_serial.wfd = m_serial.rfd = openSocket(102, const_cast<char*>(port.data()));
+		m_serial.wfd = m_serial.rfd = openSocket(guarded_get(str_to_num<int>(port), "SPS Port isn't a valid number."), const_cast<char*>(ip.data()));
 		if (m_serial.rfd == 0)
-			throw std::runtime_error("Couldn't open serial port " + std::string(port));
+			throw std::runtime_error("Couldn't open serial port " + std::string(port) + " or connect to SPS ip " + std::string(ip));
 	}
 
 	void _init_interface_(int protocol)

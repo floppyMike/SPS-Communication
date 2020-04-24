@@ -4,7 +4,7 @@
 
 enum ParaType
 {
-	LOCATION, SPS_PORT, HOST_SERVER, MAX
+	LOCATION, SPS_HOST, SPS_PORT, HOST_SERVER, MAX
 };
 
 class ProgrammParameters

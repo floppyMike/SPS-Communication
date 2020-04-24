@@ -25,10 +25,11 @@ void runtime(ServerInterface<Connector>&, SPSConnection&);
 int main(int argc, char** argv)
 {
 	//Handle command parameters
-	if (argc != 3)
+	if (argc != 4)
 	{
-		std::cerr << "Usage: SPS_Port Host\n"
-			"\"SPS Port\": Port on which the SPS sits.\n"
+		std::cerr << "Usage: " << argv[0] << " SPS_IP SPS_Port Host\n"
+			"\"SPS_IP\": IP address of the SPS.\n"
+			"\"SPS_Port\": Port on which the SPS sits. This is mostly 102.\n"
 			"\"Host\": Server name of machine where ProjectSpyder is running.\n";
 		//"\"-p\": Looks for file specified and uses its authentication code for the server.\n";
 		//"\"-d\": Launch application in debug mode.\n";
@@ -69,7 +70,7 @@ int main(int argc, char** argv)
 void setup(ServerInterface<Connector>& server, SPSConnection& sps)
 {
 #ifndef SPS_NOT_AVAILABLE
-	sps.connect(g_para[ParaType::SPS_PORT]);
+	sps.connect(g_para[ParaType::SPS_HOST], g_para[ParaType::SPS_PORT]);
 #endif // SPS_NOT_AVAILABLE
 
 #ifdef SERVER_NOT_AVAILABLE
