@@ -33,4 +33,8 @@ target_include_directories(SPS_Com PRIVATE extern/libnodave/include)
 target_include_directories(SPS_Com PRIVATE extern/asio/include)
 target_include_directories(SPS_Com PRIVATE extern/rapidjson/include)
 
-target_link_libraries(SPS_Com nodave)
+if(UNIX AND NOT APPLE)
+	target_link_libraries(SPS_Com nodave)
+elseif(WIN32)
+	target_link_libraries(SPS_Com libnodave)
+
