@@ -37,4 +37,4 @@ if(UNIX AND NOT APPLE)
 	target_link_libraries(SPS_Com nodave)
 elseif(WIN32)
 	target_link_libraries(SPS_Com libnodave)
-
+endif()
