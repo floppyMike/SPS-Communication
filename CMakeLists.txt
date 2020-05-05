@@ -35,6 +35,7 @@ target_include_directories(SPS_Com PRIVATE extern/rapidjson/include)
 
 if(UNIX AND NOT APPLE)
 	target_link_libraries(SPS_Com nodave)
+	target_link_libraries(SPS_Com pthread)
 elseif(WIN32)
 	target_link_directories(SPS_Com PRIVATE win32)
 	target_link_libraries(SPS_Com libnodave)
