@@ -3,9 +3,11 @@
 #include "Logging.h"
 #include "utility.h"
 
-
 using Parameter = std::pair<std::string_view, std::string_view>;
-struct Results { std::string header, content; };
+struct Results
+{
+	std::string header, content;
+};
 
 class GETBuilder
 {
@@ -18,8 +20,7 @@ public:
 		chain.append(path);
 
 		if (!parameters.empty())
-			chain.push_back('?'),
-			chain.append(parameters);
+			chain.push_back('?'), chain.append(parameters);
 
 		chain.append(" HTTP/1.0\r\nHost: ").append(host).append("\r\n\r\n");
 
@@ -34,8 +35,16 @@ public:
 
 	std::string build_req(std::string_view host, std::string_view path, std::string_view parameters) const
 	{
-		return std::string("POST ").append(path).append(" HTTP/1.0\r\nHost: ").append(host).append("\r\nContent-Type: application/x-www-form-urlencoded")
-			.append("\r\nContent-Length: ").append(std::to_string(parameters.size())).append("\r\n\r\n").append(parameters).append("\r\n\r\n");
+		return std::string("POST ")
+			.append(path)
+			.append(" HTTP/1.0\r\nHost: ")
+			.append(host)
+			.append("\r\nContent-Type: application/x-www-form-urlencoded")
+			.append("\r\nContent-Length: ")
+			.append(std::to_string(parameters.size()))
+			.append("\r\n\r\n")
+			.append(parameters)
+			.append("\r\n\r\n");
 	}
 };
 
@@ -45,28 +54,25 @@ public:
 	ParamBuilder() = default;
 
 	template<typename _Array>
-	std::string build_para(const _Array& para) const
+	std::string build_para(const _Array &para) const
 	{
 		static_assert(!std::is_same_v<Parameter, decltype(para.front())>, "Array must be of Parameters");
 
 		std::string str;
 
-		for (const auto& i : para)
-			str += std::string(i.first) + '=' + std::string(i.second) + '&';
+		for (const auto &i : para) str += std::string(i.first) + '=' + std::string(i.second) + '&';
 
 		if (!str.empty())
 			str.pop_back();
 
 		return str;
 	}
-
 };
-
 
 class Session
 {
 public:
-	Session(asio::io_context& io)
+	Session(asio::io_context &io)
 		: m_socket(io)
 	{
 	}
@@ -79,7 +85,7 @@ public:
 			std::clog << "Socket didn't close correctly. Message: " << err.message() << '\n';
 	}
 
-	auto& query(std::string_view head)
+	auto &query(std::string_view head)
 	{
 		_send_request_(head);
 		_validate_reponse_();
@@ -89,13 +95,10 @@ public:
 		return m_message;
 	}
 
-	tcp::socket& socket() noexcept
-	{
-		return m_socket;
-	}
+	tcp::socket &socket() noexcept { return m_socket; }
 
 private:
-	tcp::socket m_socket;
+	tcp::socket		m_socket;
 	asio::streambuf m_buf;
 
 	Results m_message;
@@ -111,7 +114,7 @@ private:
 		asio::read_until(m_socket, m_buf, "\r\n");
 		std::istream response_s(&m_buf);
 
-		std::string http_version;
+		std::string	 http_version;
 		unsigned int status_code;
 		response_s >> http_version >> status_code;
 
@@ -121,12 +124,13 @@ private:
 		if (!response_s || http_version.substr(0, 5) != "HTTP/")
 			throw std::runtime_error("Invalid response");
 		if (status_code != 200)
-			throw std::runtime_error("Response returned with status code " + std::to_string(status_code) + ". Message: " + status_message);
+			throw std::runtime_error("Response returned with status code " + std::to_string(status_code)
+									 + ". Message: " + status_message);
 	}
 
 	void _read_headers_()
 	{
-		const auto n = asio::read_until(m_socket, m_buf, "\r\n\r\n");
+		const auto n	 = asio::read_until(m_socket, m_buf, "\r\n\r\n");
 		m_message.header = _buf_to_str_(n - 4);
 		m_buf.consume(n);
 	}
@@ -136,7 +140,7 @@ private:
 		while (true)
 		{
 			std::error_code err;
-			const auto n = m_buf.size() + asio::read(m_socket, m_buf, err);
+			const auto		n = m_buf.size() + asio::read(m_socket, m_buf, err);
 
 			if (err == asio::error::eof)
 			{

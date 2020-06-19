@@ -12,14 +12,14 @@
 #include <array>
 #include <ctime>
 
-//Remove Max define
+// Remove Max define
 #define NOMINMAX
 
 #include "nodavesimple.h"
 #include "setport.h"
 #include "openSocket.h"
 
-//Remove typename clashes
+// Remove typename clashes
 #undef uc
 #undef us
 #undef u32

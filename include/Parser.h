@@ -9,10 +9,10 @@ public:
 	Parser() = default;
 
 	/**
-	* Sets data for new parsing.
-	* Resets postition and sets new string.
-	* @param [in] dat new string to set. String must be alive for the duration of class Parser existance.
-	*/
+	 * Sets data for new parsing.
+	 * Resets postition and sets new string.
+	 * @param [in] dat new string to set. String must be alive for the duration of class Parser existance.
+	 */
 	void data(std::string_view dat)
 	{
 		reset();
@@ -20,29 +20,23 @@ public:
 	}
 
 	/**
-	* Reset position of string.
-	* String parsing position set to 0.
-	*/
-	void reset() noexcept
-	{
-		m_loc = 0u;
-	}
+	 * Reset position of string.
+	 * String parsing position set to 0.
+	 */
+	void reset() noexcept { m_loc = 0u; }
 
 	/**
-	* Find pos of delimiter.
-	* @param [in] delim delimiter
-	* @return position offset of delimiter
-	*/
-	auto find(char delim)
-	{
-		return m_data.find(delim, m_loc);
-	}
+	 * Find pos of delimiter.
+	 * @param [in] delim delimiter
+	 * @return position offset of delimiter
+	 */
+	auto find(char delim) { return m_data.find(delim, m_loc); }
 
 	/**
-	* Gets string till delimiter.
-	* @param [in] delim delimiter
-	* @return optional string_view
-	*/
+	 * Gets string till delimiter.
+	 * @param [in] delim delimiter
+	 * @return optional string_view
+	 */
 	std::optional<std::string_view> get_until(char delim)
 	{
 		if (const auto loc = find(delim); loc != std::string_view::npos)
@@ -51,30 +45,30 @@ public:
 		return std::nullopt;
 	}
 	/**
-	* Gets string till one of a range of delimiters.
-	* @param [in] l array of delimiters
-	* @return optional string_view
-	*/
+	 * Gets string till one of a range of delimiters.
+	 * @param [in] l array of delimiters
+	 * @return optional string_view
+	 */
 	template<size_t _num>
-	std::optional<std::string_view> get_until(const std::array<char, _num>& l)
+	std::optional<std::string_view> get_until(const std::array<char, _num> &l)
 	{
 		for (auto iter = m_data.begin() + m_loc; iter != m_data.end(); ++iter)
-			for (const auto& i : l)
+			for (const auto &i : l)
 				if (*iter == i)
 					return get_until(static_cast<size_t>(std::distance(m_data.begin() + m_loc, iter)));
 
 		return std::nullopt;
 	}
 	/**
-	* Gets a amount of the string.
-	* @param [in] count how much to get
-	* @return optional string_view
-	*/
+	 * Gets a amount of the string.
+	 * @param [in] count how much to get
+	 * @return optional string_view
+	 */
 	std::string_view get_until(size_t count)
 	{
 		assert(m_loc + count <= m_data.size() && "String is too short");
 
-		auto&& sub_data = m_data.substr(m_loc, count);
+		auto &&sub_data = m_data.substr(m_loc, count);
 		m_loc += count;
 
 		return sub_data;
@@ -104,7 +98,8 @@ public:
 		if (m_data.size() - m_loc < str.size())
 			return false;
 
-		const auto res = m_data.size() - m_loc >= str.size() && std::equal(&m_data[m_loc], &m_data[m_loc + str.size() - 1], str.data());
+		const auto res = m_data.size() - m_loc >= str.size()
+			&& std::equal(&m_data[m_loc], &m_data[m_loc + str.size() - 1], str.data());
 
 		if (res)
 			skip(str.size());
@@ -112,10 +107,7 @@ public:
 		return res;
 	}
 
-	auto current_loc() const noexcept
-	{
-		return m_loc;
-	}
+	auto current_loc() const noexcept { return m_loc; }
 
 	template<typename T, typename = typename std::enable_if_t<std::is_arithmetic_v<T>>>
 	std::optional<T> get_num(char delim)
@@ -154,17 +146,11 @@ public:
 		return m_data[m_loc + 1];
 	}
 
-	bool at_end() const noexcept
-	{
-		return m_loc == m_data.size();
-	}
+	bool at_end() const noexcept { return m_loc == m_data.size(); }
 
-	void mov(int dis)
-	{
-		m_loc += dis;
-	}
+	void mov(int dis) { m_loc += dis; }
 
 private:
 	std::string_view m_data;
-	size_t m_loc = 0u;
+	size_t			 m_loc = 0u;
 };

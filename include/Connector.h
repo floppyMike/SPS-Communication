@@ -2,32 +2,33 @@
 
 #include "Includes.h"
 #include "Logging.h"
+#include "Query.h"
 
 class Connector
 {
 public:
 	Connector() = default;
 
-	Connector(asio::io_context* io)
+	Connector(asio::io_context *io)
 		: m_io(io)
 	{
 	}
 
-	Connector(asio::io_context* io, std::string_view host)
+	Connector(asio::io_context *io, std::string_view host)
 		: m_io(io)
 		, m_host(host)
 	{
 	}
 
-	void io(asio::io_context& i) noexcept { m_io = &i; }
+	void io(asio::io_context &i) noexcept { m_io = &i; }
 	void host(std::string_view host) noexcept { m_host = host; }
 
 	template<typename Builder, typename _Array>
-	std::string query(std::string_view path, const _Array& para)
+	std::string query(std::string_view path, const _Array &para)
 	{
 		Session session(*m_io);
 
-		tcp::resolver r(*m_io);
+		tcp::resolver		 r(*m_io);
 		tcp::resolver::query q(m_host.data(), "http");
 		asio::connect(session.socket(), r.resolve(q));
 
@@ -38,32 +39,31 @@ public:
 	}
 
 private:
-	asio::io_context* m_io = nullptr;
-	std::string_view m_host;
+	asio::io_context *m_io = nullptr;
+	std::string_view  m_host;
 };
-
 
 class ConnectorDEBUG
 {
 public:
 	ConnectorDEBUG() = default;
 
-	ConnectorDEBUG(asio::io_context* io)
+	ConnectorDEBUG(asio::io_context *io)
 		: m_io(io)
 	{
 	}
 
-	ConnectorDEBUG(asio::io_context* io, std::string_view host)
+	ConnectorDEBUG(asio::io_context *io, std::string_view host)
 		: m_io(io)
 		, m_host(host)
 	{
 	}
 
 	void host(std::string_view host) noexcept { m_host = host; }
-	void io(asio::io_context& i) noexcept { m_io = &i; }
+	void io(asio::io_context &i) noexcept { m_io = &i; }
 
 	template<typename Builder, typename _Array>
-	std::string query(std::string_view path, const _Array& para)
+	std::string query(std::string_view path, const _Array &para)
 	{
 		if constexpr (std::is_same_v<Builder, GETBuilder>)
 		{
@@ -86,6 +86,6 @@ public:
 	}
 
 private:
-	asio::io_context* m_io;
-	std::string_view m_host;
+	asio::io_context *m_io;
+	std::string_view  m_host;
 };

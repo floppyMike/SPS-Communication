@@ -17,6 +17,8 @@ set(CMAKE_CXX_FLAGS_DEBUG "-g")
 set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 set(CMAKE_CXX_STANDARD 17)
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 add_executable(SPS_Com src/main.cpp)
 
 target_include_directories(SPS_Com PRIVATE include)

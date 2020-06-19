@@ -12,12 +12,12 @@ public:
 	}
 
 	template<typename... _T>
-	auto var(const char* first, _T&&... names)
+	auto var(const char* first, _T&&... names) -> JSONValue
 	{
 		return var(first).var(std::forward<_T>(names)...);
 	}
 
-	auto var(const char* name)
+	auto var(const char* name) -> JSONValue
 	{
 		if (auto mem = m_val.FindMember(name); mem != m_val.MemberEnd())
 			return JSONValue(mem->value);

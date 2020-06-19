@@ -10,7 +10,7 @@ class Interpreter
 public:
 	Interpreter() = default;
 
-	auto&& interpret_json(JSONValue root_data, std::string_view varfile)
+	auto &&interpret_json(JSONValue root_data, std::string_view varfile)
 	{
 		if (auto s = root_data.safe_var("settings"); s.has_value())
 			prepare_seqs(s.value());
@@ -27,7 +27,7 @@ public:
 
 	void prepare_seqs(JSONValue settings)
 	{
-		for (auto& i : settings)
+		for (auto &i : settings)
 			if (::strcmp(i.name.GetString(), "const") == 0)
 				m_seqs[DB_Type::CONST].db(JSONValue(i.value).num<int>());
 			else if (::strcmp(i.name.GetString(), "mutable") == 0)
@@ -64,7 +64,7 @@ public:
 		{
 			bool exists_f = false;
 
-			for (auto& member : data_inner)
+			for (auto &member : data_inner)
 				if (iter_seq->name() == member.name.GetString())
 				{
 					exists_f = true;
@@ -77,7 +77,7 @@ public:
 		}
 	}
 
-	VariableSequences&& give_seqs() noexcept { return std::move(m_seqs); }
+	VariableSequences &&give_seqs() noexcept { return std::move(m_seqs); }
 
 private:
 	VariableSequences m_seqs;
@@ -91,20 +91,21 @@ private:
 		throw std::runtime_error(std::string("Unrecognised type: ").append(str));
 	}
 
-	std::vector<Variable> _get_vars_(std::istream& in)
+	std::vector<Variable> _get_vars_(std::istream &in)
 	{
 		std::vector<Variable> data;
 
 		for (std::string var_name; in.peek() != '\n' && std::getline(in, var_name, ':');)
 		{
-			//Check if nothing available further
+			// Check if nothing available further
 			if (!in)
 			{
-				g_log.write(Logger::Catagory::ERR) << "Variable \"" << var_name << "\" has not type. -> Using only previous variables.";
+				g_log.write(Logger::Catagory::ERR)
+					<< "Variable \"" << var_name << "\" has not type. -> Using only previous variables.";
 				return data;
 			}
 
-			//Get type
+			// Get type
 			std::string type_str;
 			std::getline(in, type_str);
 			Variable::Type type = _str_to_type_(type_str);

@@ -9,7 +9,13 @@
 class ResponseHandler
 {
 public:
-	enum HeaderList { START, DEBUG, DATA, END };
+	enum HeaderList
+	{
+		START,
+		DEBUG,
+		DATA,
+		END
+	};
 	static constexpr std::array<std::string_view, 4> HEADERS = { "#START\n", "#DEBUG\n", "#DATA\n", "#END" };
 
 	ResponseHandler() = default;
@@ -38,29 +44,27 @@ public:
 	}
 
 private:
-	void _check_start_(Parser& p)
+	void _check_start_(Parser &p)
 	{
 		if (!p.is_same(HEADERS[START]))
 			throw std::runtime_error("Missing #START.");
 	}
 
-	void _check_print_debug_(Parser& p)
+	void _check_print_debug_(Parser &p)
 	{
 		if (p.is_same(HEADERS[DEBUG]))
-			g_log.write(Logger::Catagory::INFO) << "Debug message: " << guarded_get(p.get_until('#'), "Missing #DEBUG message.");
+			g_log.write(Logger::Catagory::INFO)
+				<< "Debug message: " << guarded_get(p.get_until('#'), "Missing #DEBUG message.");
 	}
 
-	void _check_data_(Parser& p)
+	void _check_data_(Parser &p)
 	{
 		if (!p.is_same(HEADERS[DATA]))
 			throw std::runtime_error("Missing #DATA.");
 	}
-	JSONRoot extract_data(Parser& p)
-	{
-		return JSONRoot(guarded_get(p.get_until('#'), "Missing #DATA message."));
-	}
+	JSONRoot extract_data(Parser &p) { return JSONRoot(guarded_get(p.get_until('#'), "Missing #DATA message.")); }
 
-	void _check_end_(Parser& p)
+	void _check_end_(Parser &p)
 	{
 		if (!p.is_same(HEADERS[END]))
 			throw std::runtime_error("Missing #END.");

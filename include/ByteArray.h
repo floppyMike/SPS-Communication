@@ -3,10 +3,9 @@
 #include "Includes.h"
 #include "VariableSequence.h"
 
-auto& operator<<(std::ostream& o, const std::vector<uint8_t>& bytes)
+auto operator<<(std::ostream &o, const std::vector<uint8_t> &bytes) -> std::ostream &
 {
-	for (const auto& i : bytes)
-		o << std::hex << +i << ' ';
+	for (const auto &i : bytes) o << std::hex << +i << ' ';
 	o.put('\n');
 
 	return o;
@@ -14,14 +13,17 @@ auto& operator<<(std::ostream& o, const std::vector<uint8_t>& bytes)
 
 class ByteArrayConverter
 {
-	struct _LoopInt_ { size_t val : 3; };
+	struct _LoopInt_
+	{
+		size_t val : 3;
+	};
 
 public:
 	ByteArrayConverter() = default;
 
-	void from_byte_array(VarSequence& seq, const std::vector<uint8_t>& bytes)
+	void from_byte_array(VarSequence &seq, const std::vector<uint8_t> &bytes)
 	{
-		_LoopInt_ bool_skip{ 0 };	// Bools are stored in order in 1 byte
+		_LoopInt_ bool_skip{ 0 }; // Bools are stored in order in 1 byte
 		for (auto [iter_byte, iter_seq] = std::pair(bytes.begin(), seq.begin()); iter_seq != seq.end(); ++iter_seq)
 			if (iter_seq->type() == Variable::BOOL)
 			{
@@ -33,31 +35,29 @@ public:
 			else
 			{
 				if (bool_skip.val != 0)
-					++iter_byte,
-					bool_skip.val = 0;
+					++iter_byte, bool_skip.val = 0;
 
 				if (!(iter_seq->byte_size() & 1) && std::distance(bytes.begin(), iter_byte) & 1)
 					++iter_byte;
 
-				const auto& type_size = Variable::TYPE_SIZE[iter_seq->type()];
+				const auto &type_size = Variable::TYPE_SIZE[iter_seq->type()];
 
 				iter_seq->fill_var(std::vector(iter_byte, iter_byte + type_size));
 				iter_byte += type_size;
 			}
 	}
 
-	auto to_byte_array(const VarSequence& seq) const
+	auto to_byte_array(const VarSequence &seq) const
 	{
 		std::vector<uint8_t> arr;
 
-		_LoopInt_ bool_skip{ 0 };	// Bools are stored in order in 1 byte
-		size_t was_byte = 0;		// Bytes (BOOL, CHAR, BYTE) must be stored evenly
+		_LoopInt_ bool_skip{ 0 }; // Bools are stored in order in 1 byte
+		size_t	  was_byte = 0;	  // Bytes (BOOL, CHAR, BYTE) must be stored evenly
 		for (auto iter_var = seq.begin(); iter_var != seq.end(); ++iter_var)
 			if (iter_var->type() == Variable::BOOL)
 			{
 				if (bool_skip.val == 0)
-					arr.emplace_back(),
-					++was_byte;
+					arr.emplace_back(), ++was_byte;
 
 				arr.back() |= iter_var->data().front() << bool_skip.val++;
 			}
@@ -66,8 +66,7 @@ public:
 				if (iter_var->byte_size() != 1)
 				{
 					if (was_byte & 1)
-						arr.emplace_back(),
-						was_byte = 0;
+						arr.emplace_back(), was_byte = 0;
 				}
 				else
 					++was_byte;

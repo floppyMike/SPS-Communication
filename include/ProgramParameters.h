@@ -4,7 +4,11 @@
 
 enum ParaType
 {
-	LOCATION, SPS_HOST, SPS_PORT, HOST_SERVER, MAX
+	LOCATION,
+	SPS_HOST,
+	SPS_PORT,
+	HOST_SERVER,
+	MAX
 };
 
 class ProgrammParameters
@@ -12,13 +16,10 @@ class ProgrammParameters
 public:
 	ProgrammParameters() = default;
 
-	const char* operator[](size_t i)
-	{
-		return m_arr[i];
-	}
+	const char *operator[](size_t i) { return m_arr[i]; }
 
-	//template<typename _Array>
-	//bool init(int arc, char** argv, const _Array& opt, int must = 0)
+	// template<typename _Array>
+	// bool init(int arc, char** argv, const _Array& opt, int must = 0)
 	//{
 	//	m_para_opt.resize(std::size(opt) + must);
 
@@ -35,15 +36,15 @@ public:
 	//		}
 	//}
 
-	void init(int arc, char** argv)
+	void init(int arc, char **argv)
 	{
-		m_arr = argv;
+		m_arr  = argv;
 		m_size = arc;
 	}
 
 private:
-	const char* const* m_arr;
-	size_t m_size;
+	const char *const *m_arr;
+	size_t			   m_size;
 };
 
 namespace

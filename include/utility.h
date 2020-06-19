@@ -5,8 +5,8 @@
 template<typename T, template<typename> class crtpType>
 struct crtp
 {
-	T* underlying() noexcept { return static_cast<T*>(this); }
-	const T* underlying() const noexcept { return static_cast<const T*>(this); }
+	T *		 underlying() noexcept { return static_cast<T *>(this); }
+	const T *underlying() const noexcept { return static_cast<const T *>(this); }
 
 private:
 	crtp() = default;
@@ -16,16 +16,15 @@ private:
 template<typename T>
 std::optional<T> str_to_num(std::string_view str) noexcept
 {
-	if (T temp; str.empty() || [&temp, &str]() -> bool
-		{
-			if constexpr (std::is_floating_point_v<T>) //g++ and clang++ don't support floating point from_chars
+	if (T temp; str.empty() || [&temp, &str]() -> bool {
+			if constexpr (std::is_floating_point_v<T>) // g++ and clang++ don't support floating point from_chars
 				if constexpr (std::is_same_v<T, float>)
 					try
 					{
 						temp = std::stof(std::string(str));
 						return false;
 					}
-					catch (const std::exception&)
+					catch (const std::exception &)
 					{
 						return true;
 					}
@@ -43,7 +42,7 @@ std::optional<T> str_to_num(std::string_view str) noexcept
 }
 
 template<typename _T>
-auto guarded_get(std::optional<_T>&& opt, std::string_view message_on_error)
+auto guarded_get(std::optional<_T> &&opt, std::string_view message_on_error)
 {
 	if (opt.has_value())
 		return opt.value();
@@ -51,7 +50,7 @@ auto guarded_get(std::optional<_T>&& opt, std::string_view message_on_error)
 		throw std::runtime_error(message_on_error.data());
 }
 
-const char* guarded_get_string(const rj::Value& val)
+const char *guarded_get_string(const rj::Value &val)
 {
 	if (val.IsString())
 		return val.GetString();
@@ -59,7 +58,7 @@ const char* guarded_get_string(const rj::Value& val)
 		throw std::runtime_error("String expected at data variable.");
 }
 
-const auto& guarded_get_section(const rj::Value& val, std::string_view sec)
+const auto &guarded_get_section(const rj::Value &val, std::string_view sec)
 {
 	if (auto iter = val.FindMember(sec.data()); iter != val.MemberEnd())
 		return iter->value;
@@ -67,7 +66,7 @@ const auto& guarded_get_section(const rj::Value& val, std::string_view sec)
 		throw std::runtime_error("Object \"" + std::string(sec) + "\" not found in the json data.");
 }
 
-auto& guarded_get_section(rj::Value& val, std::string_view sec)
+auto &guarded_get_section(rj::Value &val, std::string_view sec)
 {
 	if (auto iter = val.FindMember(sec.data()); iter != val.MemberEnd())
 		return iter->value;
@@ -75,15 +74,13 @@ auto& guarded_get_section(rj::Value& val, std::string_view sec)
 		throw std::runtime_error("Object \"" + std::string(sec) + "\" not found in the json data.");
 }
 
-
-
-//template<typename _Typ, typename _Parent>
-//class Getter_Setter
+// template<typename _Typ, typename _Parent>
+// class Getter_Setter
 //{
 //	using mem_func_set_t = void (_Parent::*)(const _Typ&);
 //	using mem_func_get_t = const _Typ& (_Parent::*)();
 //
-//public:
+// public:
 //	Getter_Setter() = delete;
 //
 //	Getter_Setter(const Getter_Setter&) = delete;
@@ -107,7 +104,7 @@ auto& guarded_get_section(rj::Value& val, std::string_view sec)
 //	auto& operator()(const _Typ& t) { (m_p->*m_setter)(t); return *m_p; }
 //	auto& operator()(_Typ&& t) { (m_p->*m_setter)(std::move(t));  return *m_p; }
 //
-//private:
+// private:
 //	_Parent* m_p;
 //
 //	mem_func_get_t m_getter;
@@ -115,12 +112,12 @@ auto& guarded_get_section(rj::Value& val, std::string_view sec)
 //};
 //
 //
-//template<typename _Typ, typename _Parent>
-//class Getter
+// template<typename _Typ, typename _Parent>
+// class Getter
 //{
 //	using mem_func_t = const _Typ& (_Parent::*)();
 //
-//public:
+// public:
 //	Getter() = delete;
 //
 //	Getter(const Getter&) = default;
@@ -137,17 +134,17 @@ auto& guarded_get_section(rj::Value& val, std::string_view sec)
 //
 //	operator const _Typ&() const { return (m_parent->*m_getter)(); }
 //
-//private:
+// private:
 //	_Parent* m_parent;
 //	mem_func_t m_getter;
 //};
 //
-//template<typename _Typ, typename _Parent>
-//class Setter
+// template<typename _Typ, typename _Parent>
+// class Setter
 //{
 //	using mem_func_t = void (_Parent::*)(const _Typ&);
 //
-//public:
+// public:
 //	Setter() = delete;
 //
 //	Setter(const Setter&) = default;
@@ -164,7 +161,7 @@ auto& guarded_get_section(rj::Value& val, std::string_view sec)
 //
 //	operator const _Typ& () const { return (m_parent->*m_getter)(); }
 //
-//private:
+// private:
 //	_Parent* m_parent;
 //	mem_func_t m_getter;
 //};
