@@ -5,12 +5,24 @@
 template<typename T, template<typename> class crtpType>
 struct crtp
 {
-	T *		 underlying() noexcept { return static_cast<T *>(this); }
-	const T *underlying() const noexcept { return static_cast<const T *>(this); }
+	auto underlying() noexcept { return static_cast<T *>(this); }
+	auto underlying() const noexcept { return static_cast<const T *>(this); }
 
 private:
 	crtp() = default;
 	friend crtpType<T>;
+};
+
+template<typename T, template<typename> class Ex1, template<typename> class... Ex>
+struct MixBuilder
+{
+	using type = Ex1<typename MixBuilder<T, Ex...>::type>;
+};
+
+template<typename T, template<typename> class Ex>
+struct MixBuilder<T, Ex>
+{
+	using type = Ex<T>;
 };
 
 template<typename T>
@@ -72,6 +84,12 @@ auto &guarded_get_section(rj::Value &val, std::string_view sec)
 		return iter->value;
 	else
 		throw std::runtime_error("Object \"" + std::string(sec) + "\" not found in the json data.");
+}
+
+auto append_filename(std::string f, std::string_view name)
+{
+	f.insert(f.find_first_of('.'), name);
+	return f;
 }
 
 // template<typename _Typ, typename _Parent>

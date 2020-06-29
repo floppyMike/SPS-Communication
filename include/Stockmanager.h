@@ -46,7 +46,7 @@ public:
 	}
 
 	// !!! Vars marked as constant !!!
-	JSONRoot generate_json_reply(const VarSequence &t) const
+	[[nodiscard]] auto generate_json_reply(const VarSequence &t) const -> JSONRoot
 	{
 		rj::Document doc;
 		doc.CopyFrom(m_stock, doc.GetAllocator());
@@ -57,7 +57,7 @@ public:
 
 		return JSONRoot(std::move(doc));
 	}
-	JSONRoot generate_json_reply(const VariableSequences &t) const
+	[[nodiscard]] auto generate_json_reply(const VariableSequences &t) const -> JSONRoot
 	{
 		rj::Document doc;
 		doc.CopyFrom(m_stock, doc.GetAllocator());
@@ -83,20 +83,20 @@ public:
 private:
 	rj::Document m_stock;
 
-	void _add_data_(rj::Document &doc, const VarSequence &t) const
+	static void _add_data_(rj::Document &doc, const VarSequence &t) 
 	{
 		auto &root_data = doc["data"];
 		for (const auto &i : t)
 			root_data.AddMember(rj::Value().SetString(i.name().data(), doc.GetAllocator()),
 								rj::Value().SetString(i.val_str().data(), doc.GetAllocator()), doc.GetAllocator());
 	}
-	void _add_usermod_(rj::Document &doc, const VarSequence &t) const
+	static void _add_usermod_(rj::Document &doc, const VarSequence &t) 
 	{
 		auto &root_modifiable = doc["usermodifiabledata"];
 		for (const auto &i : t)
 			root_modifiable.PushBack(rj::Value().SetString(i.name().data(), doc.GetAllocator()), doc.GetAllocator());
 	}
-	void _add_friendly_vardisc_(rj::Document &doc, const VarSequence &t) const
+	static void _add_friendly_vardisc_(rj::Document &doc, const VarSequence &t) 
 	{
 		auto &root_friendly_datavar = doc["friendly"]["datavar"];
 		for (const auto &i : t)
@@ -104,7 +104,7 @@ private:
 											rj::Value().SetString(i.name().data(), doc.GetAllocator()),
 											doc.GetAllocator());
 	}
-	void _add_friendly_valdisc_(rj::Document &doc, const VarSequence &t) const
+	static void _add_friendly_valdisc_(rj::Document &doc, const VarSequence &t) 
 	{
 		auto &root_friendly_datavalue = doc["friendly"]["datavalue"];
 		for (const auto &i : t)

@@ -4,7 +4,9 @@
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
 # My Files
-windows_x86/prevauth
+build/
+.vscode
+.clang-tidy
 files-for-the-wiki/
 
 # User-specific files

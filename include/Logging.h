@@ -1,6 +1,14 @@
 #pragma once
 #include "Includes.h"
 
+auto operator<<(std::ostream &o, const std::vector<uint8_t> &bytes) -> std::ostream &
+{
+	for (const auto &i : bytes) o << std::hex << +i << ' ';
+	o.put('\n');
+
+	return o;
+}
+
 class Logger
 {
 	enum class _Color_
@@ -16,7 +24,7 @@ public:
 	class _Stream_
 	{
 	public:
-		_Stream_(Logger &log)
+		explicit _Stream_(Logger &log)
 			: m_log(&log)
 		{
 		}
@@ -67,9 +75,9 @@ public:
 
 	void seperate() { write(Catagory::INFO, "\n\n----------------------------------------\n"); }
 
-	Logger &write(Catagory c, std::string_view val) { return write(c, val.data(), val.size()); }
+	auto write(Catagory c, std::string_view val) -> Logger & { return write(c, val.data(), val.size()); }
 
-	Logger &write(Catagory c, const char *str, size_t amount)
+	auto write(Catagory c, const char *str, size_t amount) -> Logger &
 	{
 		_write_time_();
 		_write_catagory_(c);
@@ -89,7 +97,7 @@ private:
 		const auto t = std::chrono::system_clock::to_time_t(std::chrono::system_clock::now());
 		char	   buf[21];
 
-		tm time;
+		tm time{};
 #ifdef __linux__
 		gmtime_r(&t, &time);
 #elif _WIN32
@@ -133,7 +141,4 @@ private:
 	}
 };
 
-namespace
-{
-	Logger g_log;
-}
+extern Logger g_log;

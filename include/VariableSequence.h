@@ -18,9 +18,9 @@ public:
 	{
 	}
 
-	size_t total_byte_size() const noexcept
+	[[nodiscard]] auto total_byte_size() const noexcept -> size_t
 	{
-		return std::accumulate(begin(), end(), 0u, [](size_t num, const auto &i) { return num + i.byte_size(); });
+		return std::accumulate(begin(), end(), 0U, [](size_t num, const auto &i) { return num + i.byte_size(); });
 	}
 
 	using vec_t::assign;
@@ -36,7 +36,7 @@ public:
 	using vec_t::operator[];
 	using vec_t::operator=;
 
-	friend std::ostream &operator<<(std::ostream &o, const VarSequence &v)
+	friend auto operator<<(std::ostream &o, const VarSequence &v) -> std::ostream &
 	{
 		o << "DB: " << v.m_db << '\n';
 
@@ -45,10 +45,13 @@ public:
 		return o;
 	}
 
-	bool operator==(const VarSequence &s) const noexcept { return std::equal(this->begin(), this->end(), s.begin()); }
+	auto operator==(const VarSequence &s) const noexcept -> bool
+	{
+		return std::equal(this->begin(), this->end(), s.begin());
+	}
 
-	const auto &db() const noexcept { return m_db; }
-	auto &		db(int db) noexcept
+	[[nodiscard]] auto db() const noexcept -> const auto & { return m_db; }
+	auto			   db(int db) noexcept -> auto &
 	{
 		m_db = db;
 		return *this;

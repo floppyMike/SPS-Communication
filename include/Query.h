@@ -9,65 +9,47 @@ struct Results
 	std::string header, content;
 };
 
-class GETBuilder
+inline auto build_get(std::string_view host, std::string_view path, std::string_view parameters)
 {
-public:
-	GETBuilder() = default;
+	std::string chain("GET ");
+	chain.append(path);
 
-	std::string build_req(std::string_view host, std::string_view path, std::string_view parameters) const
-	{
-		std::string chain("GET ");
-		chain.append(path);
+	if (!parameters.empty())
+		chain.push_back('?'), chain.append(parameters);
 
-		if (!parameters.empty())
-			chain.push_back('?'), chain.append(parameters);
+	chain.append(" HTTP/1.0\r\nHost: ").append(host).append("\r\n\r\n");
 
-		chain.append(" HTTP/1.0\r\nHost: ").append(host).append("\r\n\r\n");
+	return chain;
+}
 
-		return chain;
-	}
-};
-
-class POSTBuilder
+inline auto build_post(std::string_view host, std::string_view path, std::string_view parameters)
 {
-public:
-	POSTBuilder() = default;
+	return std::string("POST ")
+		.append(path)
+		.append(" HTTP/1.0\r\nHost: ")
+		.append(host)
+		.append("\r\nContent-Type: application/x-www-form-urlencoded")
+		.append("\r\nContent-Length: ")
+		.append(std::to_string(parameters.size()))
+		.append("\r\n\r\n")
+		.append(parameters)
+		.append("\r\n\r\n");
+}
 
-	std::string build_req(std::string_view host, std::string_view path, std::string_view parameters) const
-	{
-		return std::string("POST ")
-			.append(path)
-			.append(" HTTP/1.0\r\nHost: ")
-			.append(host)
-			.append("\r\nContent-Type: application/x-www-form-urlencoded")
-			.append("\r\nContent-Length: ")
-			.append(std::to_string(parameters.size()))
-			.append("\r\n\r\n")
-			.append(parameters)
-			.append("\r\n\r\n");
-	}
-};
-
-class ParamBuilder
+template<typename _Array>
+auto build_para(const _Array &para)
 {
-public:
-	ParamBuilder() = default;
+	static_assert(!std::is_same_v<Parameter, decltype(para.front())>, "Array must be of Parameters");
 
-	template<typename _Array>
-	std::string build_para(const _Array &para) const
-	{
-		static_assert(!std::is_same_v<Parameter, decltype(para.front())>, "Array must be of Parameters");
+	std::string str;
 
-		std::string str;
+	for (const auto &i : para) str += std::string(i.first) + '=' + std::string(i.second) + '&';
 
-		for (const auto &i : para) str += std::string(i.first) + '=' + std::string(i.second) + '&';
+	if (!str.empty())
+		str.pop_back();
 
-		if (!str.empty())
-			str.pop_back();
-
-		return str;
-	}
-};
+	return str;
+}
 
 class Session
 {

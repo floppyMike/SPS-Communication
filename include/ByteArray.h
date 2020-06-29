@@ -3,13 +3,6 @@
 #include "Includes.h"
 #include "VariableSequence.h"
 
-auto operator<<(std::ostream &o, const std::vector<uint8_t> &bytes) -> std::ostream &
-{
-	for (const auto &i : bytes) o << std::hex << +i << ' ';
-	o.put('\n');
-
-	return o;
-}
 
 class ByteArrayConverter
 {
@@ -21,7 +14,7 @@ class ByteArrayConverter
 public:
 	ByteArrayConverter() = default;
 
-	void from_byte_array(VarSequence &seq, const std::vector<uint8_t> &bytes)
+	static auto from_byte_array(VarSequence &seq, const std::vector<uint8_t> &bytes)
 	{
 		_LoopInt_ bool_skip{ 0 }; // Bools are stored in order in 1 byte
 		for (auto [iter_byte, iter_seq] = std::pair(bytes.begin(), seq.begin()); iter_seq != seq.end(); ++iter_seq)
@@ -30,14 +23,14 @@ public:
 				if (iter_seq != seq.begin() && bool_skip.val == 0)
 					++iter_seq;
 
-				iter_seq->fill_var(static_cast<uint8_t>((*iter_byte >> bool_skip.val++) & 1));
+				iter_seq->fill_var(static_cast<uint8_t>((*iter_byte >> bool_skip.val++) & 1U));
 			}
 			else
 			{
 				if (bool_skip.val != 0)
 					++iter_byte, bool_skip.val = 0;
 
-				if (!(iter_seq->byte_size() & 1) && std::distance(bytes.begin(), iter_byte) & 1)
+				if (!(iter_seq->byte_size() & 1U) && std::distance(bytes.begin(), iter_byte) & 1U)
 					++iter_byte;
 
 				const auto &type_size = Variable::TYPE_SIZE[iter_seq->type()];
@@ -47,7 +40,7 @@ public:
 			}
 	}
 
-	auto to_byte_array(const VarSequence &seq) const
+	static auto to_byte_array(const VarSequence &seq)
 	{
 		std::vector<uint8_t> arr;
 
@@ -65,7 +58,7 @@ public:
 			{
 				if (iter_var->byte_size() != 1)
 				{
-					if (was_byte & 1)
+					if (was_byte & 1U)
 						arr.emplace_back(), was_byte = 0;
 				}
 				else

@@ -7,82 +7,182 @@
 #include "Connector.h"
 #include "Interpeter.h"
 #include "Stockmanager.h"
+#include "utility.h"
+#include <string_view>
 
-template<typename Connector>
-class ServerInterface
-	: Connector
-	, StockManager
+template<typename Impl>
+class Pairer : public crtp<Impl, Pairer>
+{
+protected:
+	Pairer() = default;
+
+	auto _pair_up(std::string_view host, std::string_view param)
+	{
+		g_log.write(Logger::Catagory::INFO) << "Pairing up to host: " << host;
+
+		auto json = this->underlying()->communicate(
+			[host, param, io = this->underlying()->io()] { return query(io, host, param); });
+
+		const auto authcode = json.var("authcode").string();
+
+		std::ofstream fileout(PAIR_FILE_NAME.data(), std::ios::binary | std::ios::out);
+		fileout << authcode;
+
+		return authcode;
+	}
+
+	auto _pair_up(std::istream &stream)
+	{
+		g_log.write(Logger::Catagory::INFO) << "Pairing up using known authcode";
+
+		std::string authcode;
+		stream >> authcode;
+
+		return authcode;
+	}
+};
+
+template<typename Impl>
+class PairerDebug : public crtp<Impl, PairerDebug>
+{
+protected:
+	PairerDebug() = default;
+
+	auto _pair_up(std::string_view file, std::string_view param)
+	{
+		const auto file_full = std::string(file) + "_debugpair";
+
+		g_log.write(Logger::Catagory::WARN) << "Pairing up to host using File: " << file_full;
+		g_log.write(Logger::Catagory::INFO) << "Pair request:\n" << param;
+
+		const auto json = this->underlying()->communicate([&file_full] { return query_debug_get(file_full); });
+
+		const auto authcode = json.var("authcode").string();
+
+		std::ofstream fileout(file_full.data(), std::ios::binary | std::ios::out);
+		fileout << authcode;
+
+		return authcode;
+	}
+
+	auto _pair_up(std::istream &stream)
+	{
+		g_log.write(Logger::Catagory::INFO) << "Pairing up using known authcode";
+
+		std::string authcode;
+		stream >> authcode;
+
+		return authcode;
+	}
+};
+
+template<typename Impl>
+class Getter : public crtp<Impl, Getter>
+{
+protected:
+	Getter() = default;
+
+	auto _get(std::string_view host, std::string_view param)
+	{
+		return this->underlying()->communicate(
+			[host, param, io = this->underlying()->io()] { return query(io, host, param); });
+	}
+};
+
+template<typename Impl>
+class GetterDebug : public crtp<Impl, GetterDebug>
+{
+protected:
+	GetterDebug() = default;
+
+	auto _get(std::string_view file, std::string_view param)
+	{
+		const auto file_full = std::string(file) + "_debugget";
+
+		g_log.write(Logger::Catagory::WARN) << "Getting get request from file: " << file_full;
+		g_log.write(Logger::Catagory::INFO) << "GET request parameters:\n" << param;
+
+		return this->underlying()->communicate([&file_full] { return query_debug_get(file_full); });
+	}
+};
+
+template<typename Impl>
+class Poster : public crtp<Impl, Poster>
+{
+protected:
+	Poster() = default;
+
+	auto _post(std::string_view host, std::string_view param)
+	{
+		return this->underlying()->communicate(
+			[host, param, io = this->underlying()->io()] { return query(io, host, param); });
+	}
+};
+
+template<typename Impl>
+class PosterDebug : public crtp<Impl, PosterDebug>
+{
+protected:
+	PosterDebug() = default;
+
+	auto _post(std::string_view file, std::string_view param)
+	{
+		const auto file_full = std::string(file) + "_debugpost";
+
+		g_log.write(Logger::Catagory::WARN) << "Putting request to file: " << file_full;
+		g_log.write(Logger::Catagory::INFO) << "POST request parameters:\n" << param;
+
+		return this->underlying()->communicate([&file_full, param] { return query_debug_post(file_full, param); });
+	}
+};
+
+template<template<typename> class... I>
+class Server : public I<Server<I...>>...
 {
 public:
-	ServerInterface() = default;
-
-	ServerInterface(asio::io_context *io, std::string_view host)
-		: Connector(io, host)
+	explicit Server(asio::io_context *io)
+		: m_io(io)
 	{
 	}
 
-	using Connector::host;
-	using Connector::io;
-
-	void pair_up(std::string_view authfile)
+	auto pair_up(std::string_view host)
 	{
-		if (auto filein = std::ifstream(authfile.data(), std::ios::binary | std::ios::in); filein)
-		{
-			g_log.write(Logger::Catagory::INFO) << "Pairing up using file: " << authfile;
-			filein >> m_authcode;
-		}
-		else
-		{
-			g_log.write(Logger::Catagory::INFO, "Pairing using host");
-
-			auto json  = _communticate_<GETBuilder>("/pair.php", std::array{ Parameter{ "type", "raw" } });
-			m_authcode = json.var("authcode").string();
-
-			std::ofstream fileout(authfile.data(), std::ios::binary | std::ios::out);
-			fileout.write(m_authcode.data(), m_authcode.size());
-		}
+		std::ifstream file(PAIR_FILE_NAME.data(), std::ios::in | std::ios::binary);
+		m_authcode = file
+			? this->_pair_up(file)
+			: this->_pair_up(host, build_get(host, "/pair.php", build_para(std::array{ Parameter{ "type", "raw" } })));
 	}
 
-	auto get_request()
+	auto get(std::string_view host)
 	{
 		auto json =
-			_communticate_<GETBuilder>("/interact.php",
-									   std::array{ Parameter{ "type", "raw" }, Parameter{ "authcode", m_authcode },
-												   Parameter{ "requesttype", "GET" } });
-		this->update_stock(json.var("data", "device"));
+			this->_get(host,
+					   build_get(host, "/interact.php",
+								 build_para(std::array{ Parameter{ "type", "raw" }, Parameter{ "authcode", m_authcode },
+														Parameter{ "requesttype", "GET" } })));
 
+		m_doc.update_stock(json.var("data", "device"));
 		return json;
 	}
 
-	void post_request(const VariableSequences &seq)
+	template<typename _P>
+	auto post(std::string_view host, _P &&var)
 	{
-		const auto str = this->generate_json_reply(seq).to_string();
-
-		_communticate_<POSTBuilder>("/interact.php",
-									std::array{ Parameter{ "type", "raw" }, Parameter{ "requesttype", "PUT" },
-												Parameter{ "authcode", m_authcode }, Parameter{ "data", str } });
-	}
-	void post_request(const VarSequence &seq)
-	{
-		const auto str = this->generate_json_reply(seq).to_string();
-
-		_communticate_<POSTBuilder>("/interact.php",
-									std::array{ Parameter{ "type", "raw" }, Parameter{ "requesttype", "UPDATE" },
-												Parameter{ "authcode", m_authcode }, Parameter{ "data", str } });
+		const auto str = m_doc.generate_json_reply(var).to_string();
+		return this->_post(
+			host,
+			build_post(host, "/interact.php",
+					   build_para(std::array{ Parameter{ "type", "raw" }, Parameter{ "requesttype", "PUT" },
+											  Parameter{ "authcode", m_authcode }, Parameter{ "data", str } })));
 	}
 
-private:
-	std::string							  m_authcode;
-	std::chrono::steady_clock::time_point m_time_till = std::chrono::steady_clock::now();
-	JSONRoot							  m_stock;
-
-	template<typename Method, typename _Array>
-	JSONRoot _communticate_(std::string_view path, const _Array &arr)
+	template<typename _Query>
+	auto communicate(_Query &&q)
 	{
 		g_log.write(Logger::Catagory::INFO, "Waiting through timeout...");
 		std::this_thread::sleep_until(m_time_till);
 
-		auto json = ResponseHandler().parse_content(this->template query<Method>(path, arr));
+		auto json = ResponseHandler().parse_content(q());
 
 		const auto timeout = std::chrono::seconds(json.var("requesttimeout").template num<unsigned int>());
 		m_time_till		   = std::chrono::steady_clock::now() + timeout;
@@ -90,4 +190,15 @@ private:
 
 		return json;
 	}
+
+	constexpr auto io() const noexcept { return m_io; }
+
+private:
+	asio::io_context *m_io;
+
+	StockManager m_doc;
+
+	std::string							  m_authcode;
+	std::chrono::steady_clock::time_point m_time_till = std::chrono::steady_clock::now();
+	JSONRoot							  m_stock;
 };

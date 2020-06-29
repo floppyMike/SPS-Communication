@@ -39,3 +39,5 @@ using asio::ip::tcp;
 using namespace std::chrono_literals;
 
 namespace rj = rapidjson;
+
+static constexpr std::string_view PAIR_FILE_NAME = "authdata.txt";
