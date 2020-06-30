@@ -2,6 +2,8 @@
 
 #include "Includes.h"
 #include "JSON.h"
+#include "rapidjson/document.h"
+#include "rapidjson/rapidjson.h"
 
 class StockManager
 {
@@ -41,7 +43,13 @@ public:
 					.AddMember(rj::Value().SetString("type", m_stock.GetAllocator()),
 							   rj::Value().SetString("SPS", m_stock.GetAllocator()), m_stock.GetAllocator()),
 				m_stock.GetAllocator())
-			.AddMember(rj::Value().SetString("preferredupdatetime", m_stock.GetAllocator()), 10,
+			.AddMember(rj::Value().SetString("preferredupdatetime", m_stock.GetAllocator()), 10, m_stock.GetAllocator())
+			.AddMember(rj::Value().SetString("device", m_stock.GetAllocator()),
+					   rj::Value(rj::Type::kObjectType)
+						   .AddMember(rj::Value().SetString("type", m_stock.GetAllocator()),
+									  rj::Value().SetString("SPS", m_stock.GetAllocator()), m_stock.GetAllocator())
+						   .AddMember(rj::Value().SetString("name", m_stock.GetAllocator()),
+									  rj::Value().SetString("SPS", m_stock.GetAllocator()), m_stock.GetAllocator()),
 					   m_stock.GetAllocator());
 	}
 
@@ -76,27 +84,27 @@ public:
 
 	void update_stock(JSONValue root_device)
 	{
-		m_stock.AddMember(rj::Value().SetString("device", m_stock.GetAllocator()),
-						  rj::Value().CopyFrom(root_device.data(), m_stock.GetAllocator()), m_stock.GetAllocator());
+		const auto member = m_stock.FindMember("device");
+		member->value = rj::Value().CopyFrom(root_device.data(), m_stock.GetAllocator()), m_stock.GetAllocator();
 	}
 
 private:
 	rj::Document m_stock;
 
-	static void _add_data_(rj::Document &doc, const VarSequence &t) 
+	static void _add_data_(rj::Document &doc, const VarSequence &t)
 	{
 		auto &root_data = doc["data"];
 		for (const auto &i : t)
 			root_data.AddMember(rj::Value().SetString(i.name().data(), doc.GetAllocator()),
 								rj::Value().SetString(i.val_str().data(), doc.GetAllocator()), doc.GetAllocator());
 	}
-	static void _add_usermod_(rj::Document &doc, const VarSequence &t) 
+	static void _add_usermod_(rj::Document &doc, const VarSequence &t)
 	{
 		auto &root_modifiable = doc["usermodifiabledata"];
 		for (const auto &i : t)
 			root_modifiable.PushBack(rj::Value().SetString(i.name().data(), doc.GetAllocator()), doc.GetAllocator());
 	}
-	static void _add_friendly_vardisc_(rj::Document &doc, const VarSequence &t) 
+	static void _add_friendly_vardisc_(rj::Document &doc, const VarSequence &t)
 	{
 		auto &root_friendly_datavar = doc["friendly"]["datavar"];
 		for (const auto &i : t)
@@ -104,7 +112,7 @@ private:
 											rj::Value().SetString(i.name().data(), doc.GetAllocator()),
 											doc.GetAllocator());
 	}
-	static void _add_friendly_valdisc_(rj::Document &doc, const VarSequence &t) 
+	static void _add_friendly_valdisc_(rj::Document &doc, const VarSequence &t)
 	{
 		auto &root_friendly_datavalue = doc["friendly"]["datavalue"];
 		for (const auto &i : t)

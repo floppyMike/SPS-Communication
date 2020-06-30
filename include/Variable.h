@@ -55,21 +55,21 @@ public:
 		std::reverse(m_data.begin(), m_data.end());
 	}
 
-	auto byte_size() const noexcept { return TYPE_SIZE[m_type]; }
+	[[nodiscard]] auto byte_size() const noexcept { return TYPE_SIZE[m_type]; }
 
 	void fill_var(const std::vector<uint8_t> &val) { m_data = val; }
 	void fill_var(std::vector<uint8_t> &&val) noexcept { m_data = std::move(val); }
 
-	const auto &data() const noexcept { return m_data; }
-	const auto &type() const noexcept { return m_type; }
+	[[nodiscard]] auto data() const noexcept -> const auto & { return m_data; }
+	[[nodiscard]] auto type() const noexcept -> const auto & { return m_type; }
 
-	void			 name(std::string_view str) noexcept { m_name = str; }
-	void			 name(std::string &&str) noexcept { m_name = std::move(str); }
-	std::string_view name() const noexcept { return m_name; }
+	void			   name(std::string_view str) noexcept { m_name = str; }
+	void			   name(std::string &&str) noexcept { m_name = std::move(str); }
+	[[nodiscard]] auto name() const noexcept -> std::string_view { return m_name; }
 
-	std::string_view type_str() const noexcept { return TYPE_STR[m_type]; }
+	[[nodiscard]] auto type_str() const noexcept -> std::string_view { return TYPE_STR[m_type]; }
 
-	std::string val_str() const
+	[[nodiscard]] auto val_str() const -> std::string
 	{
 		auto dat = m_data;
 		std::reverse(dat.begin(), dat.end());
@@ -88,7 +88,7 @@ public:
 		}
 	}
 
-	friend std::ostream &operator<<(std::ostream &o, const Variable &v)
+	friend auto operator<<(std::ostream &o, const Variable &v) -> std::ostream &
 	{
 		o << "Name: " << v.m_name << "\t Type: " << v.type_str() << "\t Value: " << v.val_str() << "\t Bytes: ";
 
@@ -97,7 +97,7 @@ public:
 		return o;
 	}
 
-	bool operator==(const Variable &v) const noexcept
+	auto operator==(const Variable &v) const noexcept -> bool
 	{
 		return m_type == v.m_type && m_name == v.m_name && m_data == v.m_data;
 	}
@@ -108,9 +108,8 @@ private:
 	std::vector<uint8_t> m_data;
 
 	template<typename T>
-	T _get_num_(std::string_view s)
+	auto _get_num_(std::string_view s) -> T
 	{
 		return guarded_get(str_to_num<T>(s), "Value of variable isn't convertable.");
 	}
 };
-

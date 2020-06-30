@@ -23,7 +23,7 @@ public:
 	 * Reset position of string.
 	 * String parsing position set to 0.
 	 */
-	void reset() noexcept { m_loc = 0u; }
+	void reset() noexcept { m_loc = 0U; }
 
 	/**
 	 * Find pos of delimiter.
@@ -37,7 +37,7 @@ public:
 	 * @param [in] delim delimiter
 	 * @return optional string_view
 	 */
-	std::optional<std::string_view> get_until(char delim)
+	auto get_until(char delim) -> std::optional<std::string_view>
 	{
 		if (const auto loc = find(delim); loc != std::string_view::npos)
 			return get_until(loc - m_loc);
@@ -50,7 +50,7 @@ public:
 	 * @return optional string_view
 	 */
 	template<size_t _num>
-	std::optional<std::string_view> get_until(const std::array<char, _num> &l)
+	auto get_until(const std::array<char, _num> &l) -> std::optional<std::string_view>
 	{
 		for (auto iter = m_data.begin() + m_loc; iter != m_data.end(); ++iter)
 			for (const auto &i : l)
@@ -64,7 +64,7 @@ public:
 	 * @param [in] count how much to get
 	 * @return optional string_view
 	 */
-	std::string_view get_until(size_t count)
+	auto get_until(size_t count) -> std::string_view
 	{
 		assert(m_loc + count <= m_data.size() && "String is too short");
 
@@ -74,7 +74,7 @@ public:
 		return sub_data;
 	}
 
-	bool skip(char delim)
+	auto skip(char delim) -> bool
 	{
 		if (const auto loc = find(delim); loc != std::string_view::npos)
 		{
@@ -84,7 +84,7 @@ public:
 
 		return true;
 	}
-	bool skip(size_t num) noexcept
+	auto skip(size_t num) noexcept -> bool
 	{
 		if (m_loc + num > m_data.size())
 			return false;
@@ -93,7 +93,7 @@ public:
 		return true;
 	}
 
-	bool is_same(std::string_view str) noexcept
+	auto is_same(std::string_view str) noexcept -> bool
 	{
 		if (m_data.size() - m_loc < str.size())
 			return false;
@@ -107,10 +107,10 @@ public:
 		return res;
 	}
 
-	auto current_loc() const noexcept { return m_loc; }
+	[[nodiscard]] auto current_loc() const noexcept { return m_loc; }
 
 	template<typename T, typename = typename std::enable_if_t<std::is_arithmetic_v<T>>>
-	std::optional<T> get_num(char delim)
+	auto get_num(char delim) -> std::optional<T>
 	{
 		if (const auto end = find(delim); end != std::string_view::npos)
 		{
@@ -125,7 +125,7 @@ public:
 		return std::nullopt;
 	}
 	template<typename T, typename = typename std::enable_if_t<std::is_arithmetic_v<T>>>
-	std::optional<T> get_num()
+	auto get_num() -> std::optional<T>
 	{
 		if (m_loc == m_data.size())
 			return std::nullopt;
@@ -138,7 +138,7 @@ public:
 		return temp;
 	}
 
-	std::optional<char> peek()
+	auto peek() -> std::optional<char>
 	{
 		if (m_loc + 1 >= m_data.size())
 			return std::nullopt;
@@ -146,11 +146,11 @@ public:
 		return m_data[m_loc + 1];
 	}
 
-	bool at_end() const noexcept { return m_loc == m_data.size(); }
+	auto at_end() const noexcept -> bool { return m_loc == m_data.size(); }
 
 	void mov(int dis) { m_loc += dis; }
 
 private:
 	std::string_view m_data;
-	size_t			 m_loc = 0u;
+	size_t			 m_loc = 0U;
 };

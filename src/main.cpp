@@ -6,20 +6,23 @@ To Do
 - documentation
 */
 
+//#define SPS_NOT_AVAILABLE
+//#define SERVER_NOT_AVAILABLE
+
 #include "Includes.h"
 #include "Interpeter.h"
 #include "Logging.h"
-#include "SPS.h"
-#include "SPSIO.h"
 #include "ServerInterface.h"
 #include "ProgramParameters.h"
 #include "ByteArray.h"
 #include "VariableSequence.h"
 
-Logger g_log;
+#ifndef SPS_NOT_AVAILABLE
+#include "SPS.h"
+#include "SPSIO.h"
+#endif
 
-//#define SPS_NOT_AVAILABLE
-//#define SERVER_NOT_AVAILABLE
+Logger g_log;
 
 class RunTime
 {
@@ -101,7 +104,10 @@ private:
 #endif
 		>
 				  m_server;
+
+	#ifndef SPS_NOT_AVAILABLE
 	SPSConnection m_sps;
+	#endif
 };
 
 auto main(int argc, char **argv) -> int
@@ -130,16 +136,16 @@ auto main(int argc, char **argv) -> int
 	RunTime rt(&io, argv[3]);
 
 	// Pairing
-	for (char err_c = 0; err_c < 5;) try
+	for (char err_c = 1; true;) try
 		{
 			rt.pair_up(argv[1], argv[2]);
-			err_c = 0;
+			break;
 		}
 		catch (const std::exception &e)
 		{
 			g_log.write(Logger::Catagory::FATAL) << "Error " << +err_c << " of 5 during pairing: " << e.what();
 
-			if (++err_c == 5)
+			if (err_c++ == 5)
 				return 1;
 		}
 		catch (...)
@@ -149,7 +155,7 @@ auto main(int argc, char **argv) -> int
 		}
 
 	// Setup
-	for (char err_c = 0; err_c < 5;) try
+	for (char err_c = 1; true;) try
 		{
 			auto vars = rt.request_varsequence();
 
@@ -161,13 +167,13 @@ auto main(int argc, char **argv) -> int
 			rt.init_variables(vars);
 			rt.post_varsequence(vars);
 
-			err_c = 0;
+			break;
 		}
 		catch (const std::exception &e)
 		{
 			g_log.write(Logger::Catagory::FATAL) << "Error " << +err_c << " of 5 during setup: " << e.what();
 
-			if (++err_c == 5)
+			if (err_c++ == 5)
 				return 1;
 		}
 		catch (...)
@@ -177,7 +183,7 @@ auto main(int argc, char **argv) -> int
 		}
 
 	// Update
-	for (char err_c = 0; err_c < 5;) try
+	for (char err_c = 1; true;) try
 		{
 			auto vars = rt.request_varsequence();
 
@@ -188,13 +194,13 @@ auto main(int argc, char **argv) -> int
 			rt.update_sps(vars);
 			rt.post_varsequence(vars);
 
-			err_c = 0;
+			err_c = 1;
 		}
 		catch (const std::exception &e)
 		{
 			g_log.write(Logger::Catagory::FATAL) << "Error " << +err_c << " of 5 during updating SPS: " << e.what();
 
-			if (++err_c == 5)
+			if (err_c++ == 5)
 				return 1;
 		}
 		catch (...)

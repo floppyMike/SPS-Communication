@@ -55,11 +55,11 @@ protected:
 		g_log.write(Logger::Catagory::WARN) << "Pairing up to host using File: " << file_full;
 		g_log.write(Logger::Catagory::INFO) << "Pair request:\n" << param;
 
-		const auto json = this->underlying()->communicate([&file_full] { return query_debug_get(file_full); });
+		auto json = this->underlying()->communicate([&file_full] { return query_debug_get(file_full); });
 
 		const auto authcode = json.var("authcode").string();
 
-		std::ofstream fileout(file_full.data(), std::ios::binary | std::ios::out);
+		std::ofstream fileout(PAIR_FILE_NAME.data(), std::ios::binary | std::ios::out);
 		fileout << authcode;
 
 		return authcode;
@@ -182,7 +182,7 @@ public:
 		g_log.write(Logger::Catagory::INFO, "Waiting through timeout...");
 		std::this_thread::sleep_until(m_time_till);
 
-		auto json = ResponseHandler().parse_content(q());
+		auto json = ResponseHandler::parse_content(q());
 
 		const auto timeout = std::chrono::seconds(json.var("requesttimeout").template num<unsigned int>());
 		m_time_till		   = std::chrono::steady_clock::now() + timeout;
