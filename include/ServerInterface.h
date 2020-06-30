@@ -23,8 +23,10 @@ protected:
 		auto json = this->underlying()->communicate(
 			[host, param, io = this->underlying()->io()] { return query(io, host, param); });
 
+		// Get authcode from json
 		const auto authcode = json.var("authcode").string();
 
+		// Write authcode to authdata.txt
 		std::ofstream fileout(PAIR_FILE_NAME.data(), std::ios::binary | std::ios::out);
 		fileout << authcode;
 
@@ -57,8 +59,10 @@ protected:
 
 		auto json = this->underlying()->communicate([&file_full] { return query_debug_get(file_full); });
 
+		// Get authcode from json
 		const auto authcode = json.var("authcode").string();
 
+		// Write authcode to authdata.txt
 		std::ofstream fileout(PAIR_FILE_NAME.data(), std::ios::binary | std::ios::out);
 		fileout << authcode;
 
@@ -147,6 +151,7 @@ public:
 
 	auto pair_up(std::string_view host)
 	{
+		// Use auth file if available else GET from server
 		std::ifstream file(PAIR_FILE_NAME.data(), std::ios::in | std::ios::binary);
 		m_authcode = file
 			? this->_pair_up(file)
@@ -155,12 +160,14 @@ public:
 
 	auto get(std::string_view host)
 	{
+		// Send GET request
 		auto json =
 			this->_get(host,
 					   build_get(host, "/interact.php",
 								 build_para(std::array{ Parameter{ "type", "raw" }, Parameter{ "authcode", m_authcode },
 														Parameter{ "requesttype", "GET" } })));
 
+		// Update stock json with Server device data
 		m_doc.update_stock(json.var("data", "device"));
 		return json;
 	}
@@ -168,7 +175,10 @@ public:
 	template<typename _P>
 	auto post(std::string_view host, _P &&var)
 	{
+		// Create json reply
 		const auto str = m_doc.generate_json_reply(var).to_string();
+
+		// POST json to server
 		return this->_post(
 			host,
 			build_post(host, "/interact.php",
@@ -179,11 +189,13 @@ public:
 	template<typename _Query>
 	auto communicate(_Query &&q)
 	{
+		// Wait timeout
 		g_log.write(Logger::Catagory::INFO, "Waiting through timeout...");
 		std::this_thread::sleep_until(m_time_till);
 
 		auto json = ResponseHandler::parse_content(q());
 
+		// Update timeout
 		const auto timeout = std::chrono::seconds(json.var("requesttimeout").template num<unsigned int>());
 		m_time_till		   = std::chrono::steady_clock::now() + timeout;
 		g_log.write(Logger::Catagory::INFO) << "Timeout duration: " << timeout.count() << 's';

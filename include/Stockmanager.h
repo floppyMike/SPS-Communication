@@ -11,6 +11,7 @@ public:
 	StockManager()
 		: m_stock(rj::Type::kObjectType)
 	{
+		// Initialize the stock json data
 		m_stock
 			.AddMember(
 				rj::Value().SetString("settings", m_stock.GetAllocator()),
@@ -84,6 +85,7 @@ public:
 
 	void update_stock(JSONValue root_device)
 	{
+		// Copy device to stock device
 		const auto member = m_stock.FindMember("device");
 		member->value = rj::Value().CopyFrom(root_device.data(), m_stock.GetAllocator()), m_stock.GetAllocator();
 	}
