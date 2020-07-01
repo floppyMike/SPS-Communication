@@ -136,7 +136,7 @@ Aus diesen Daten wird dann wieder eine JSON Datei erstellt und über ein HTTP PO
 
 Durch die GFS habe ich gelernt wie man mit Git arbeitet. Vor der GFS habe ich immer alleine gearbeitet und nie kollaboriert. Während der GFS lernte ich über die möglichkeiten die git anbietet, um Beispielsweise Konflikte zwischen den `Branches` zu lösen. Zusätzlich habe ich ein paar Funktionalitäten in [github](https://github.com/) kennengelernt wie zum Beispiel `Actions` und `Github Pages`. Ich kann mir vorstellen, dass ich nächstes Jahr diese Funktionalitäten ausnutzen werde.
 
-Auch lernte ich wie man Projekte strukturiert. Vorher habe ich immer die Struktur von Visual Studio genommen. Während der GFS fing ich an `CMake` zu benutzen. Es bietet die Möglichkeit plattformunabhängig das Projekt einzurichten und zu kompilieren. In der Zukunft werde ich `CMake` für C++ Projekte benutzen.
+Auch lernte ich wie man Projekte strukturiert. Vorher habe ich immer die Struktur von Visual Studio genommen. Während der GFS fing ich an `CMake` zu benutzen. Es bietet die Möglichkeit das Projekt plattformunabhängig einzurichten und zu kompilieren. In der Zukunft werde ich `CMake` für C++ Projekte benutzen.
 
 ### Jens
 
