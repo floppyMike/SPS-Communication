@@ -5,14 +5,13 @@
 #include "VariableSequence.h"
 #include "SPSIO.h"
 
-
 class ESPSIn
 {
 public:
 	ESPSIn() = default;
 
 protected:
-	auto _in(int db, int len, daveConnection* con)
+	auto _in(int db, int len, daveConnection *con)
 	{
 		SPSRequester<TSPSRead> read(con);
 
@@ -27,7 +26,6 @@ protected:
 		read.send();
 		return read.results();
 	}
-
 };
 
 class ESPSOut
@@ -36,7 +34,7 @@ public:
 	ESPSOut() = default;
 
 protected:
-	auto _out(int db, const std::vector<uint8_t>& vars, daveConnection* con)
+	auto _out(int db, const std::vector<uint8_t> &vars, daveConnection *con)
 	{
 		SPSRequester<TSPSWrite> write(con);
 
@@ -51,9 +49,7 @@ protected:
 		write.send();
 		return write.results();
 	}
-
 };
-
 
 class SPSConnection
 	: ESPSIn
@@ -87,45 +83,47 @@ public:
 		return this->_in(db, len, m_connection);
 	}
 
-	auto out(int db, const std::vector<uint8_t>& vars)
+	auto out(int db, const std::vector<uint8_t> &vars)
 	{
 		g_log.write(Logger::Catagory::INFO) << "Writing into db " << db << " bytes of size " << vars.size();
 		return this->_out(db, vars, m_connection);
 	}
 
 private:
-	daveInterface* m_interface = nullptr;
-	daveConnection* m_connection = nullptr;
+	daveInterface *	  m_interface  = nullptr;
+	daveConnection *  m_connection = nullptr;
 	_daveOSserialType m_serial;
 
 	void _open_socket_(std::string_view ip, std::string_view port)
 	{
-		m_serial.wfd = m_serial.rfd = openSocket(guarded_get(str_to_num<int>(port), "SPS Port isn't a valid number."), const_cast<char*>(ip.data()));
+		// Open the TCP connection to SPS using given port
+		m_serial.wfd = m_serial.rfd = openSocket(guarded_get(str_to_num<int>(port), "SPS Port isn't a valid number."),
+												 const_cast<char *>(ip.data()));
 		if (m_serial.rfd == 0)
-			throw std::runtime_error("Couldn't open serial port " + std::string(port) + " or connect to SPS ip " + std::string(ip));
+			throw std::runtime_error("Couldn't open serial port " + std::string(port) + " or connect to SPS ip "
+									 + std::string(ip));
 	}
 
 	void _init_interface_(int protocol)
 	{
-		m_interface = daveNewInterface(m_serial, const_cast<char*>("IF1"), 0, protocol, daveSpeed187k);
+		// Initialize info about PLC connection -> serial, name, ---, protocol, speed
+		m_interface = daveNewInterface(m_serial, const_cast<char *>("IF1"), 0, protocol, daveSpeed187k);
 		daveSetTimeout(m_interface, 5000000);
 	}
 
 	void _init_adapter_()
 	{
-		for (size_t i = 0; i < 3; ++i)
-			if (daveInitAdapter(m_interface) == 0)
-				break;
-			else
-			{
-				daveDisconnectAdapter(m_interface);
-				if (i == 2)
-					throw std::runtime_error("Couldn't connect to Adapter.");
-			}
+		// Initialize libnodave adapter
+		if (daveInitAdapter(m_interface) != 0)
+		{
+			daveDisconnectAdapter(m_interface);
+			throw std::runtime_error("Couldn't connect to SPS Adapter.");
+		}
 	}
 
 	void _init_connection_()
 	{
+		// Create connection  -> interface, MPI, rack, CPU slot 
 		m_connection = daveNewConnection(m_interface, 2, 0, 0);
 		if (daveConnectPLC(m_connection) != 0)
 			throw std::runtime_error("Couldn't connect to PLC.");
