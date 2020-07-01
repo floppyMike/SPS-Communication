@@ -15,13 +15,13 @@ Dafür holt sich das Interface diese Daten aus dem Smart Home System und schreib
 
 ### Senden von Daten aus der SPS an das Smart Home System
 
-Um Daten aus der SPS an das Smart Home System zu senden, werden müssen diese in einem bestimmten Global DB stehen. Dieser ist ein anderer als der Global DB für das senden von Daten an die SPS. Das Interface ließt diese Daten aus dem GlobalDB aus und schickt sie an das Interface.
+Um Daten aus der SPS an das Smart Home System zu senden, müssen diese in einem bestimmten Global DB stehen. Dieser ist ein anderer als der Global DB für das senden von Daten an die SPS. Das Interface ließt diese Daten aus dem Global DB aus und schickt sie an das Smart Home System.
 
 ## Entwicklung und Herausforderungen
 
 ### Einarbeitung
 
-Da wir noch nie zuvor mit einer SPS gearbeitet hatten, mussten wir uns zunächst darüber informieren, was eine SPS ist und wie man diese steuern kann.
+Da wir noch nie zuvor mit einer SPS gearbeitet hatten, mussten wir uns zunächst darüber informieren, was eine SPS ist und wie man diese ansteuern kann.
 
 Dafür wurde uns eine Virtuelle Maschine gegeben, auf der das TIA-Portal installiert ist. Dieses ist die Entwicklungsumgebung, mit der man eine SPS programmieren kann und diese auch simulieren kann.
 
@@ -39,7 +39,7 @@ Danach haben wir mit dem Entwickeln deseigentlichen Interfaces begonnen.
 
 Ursprünglich wollten wir keinen Unterschied zwischen den Daten machen, die vom Server an die SPS gesendet werden und den Daten, die von der SPS an den Server gesendet werden. Das führte allerdings dazu, dass die Daten, die in eine Richtung gehen sollten teilweise mit den Daten für die andere Richtung überschrieben wurden.
 
-Diese Herausforderung wurde gelöst, indem wir beide Wege komplett voneinander getrennt haben. Beide Wege haben jetzt ihre eigene Global DB's.
+Diese Herausforderung wurde gelöst, indem wir beide Wege komplett voneinander getrennt haben. Beide Wege haben jetzt jeweils ihren eigenen Global DB.
 Dadurch ist es allerdings nicht mehr möglich einen Wert durch den Server zu ändern, anschließend von der SPS zu ändern und diesen geänderten Wert dann im Server anzuzeigen.
 Das Programm in der SPS muss sich also darum kümmern, dass der Global DB für die Daten vom Server zur SPS nur ausgelesen und nicht beschrieben wird.
 
@@ -58,7 +58,7 @@ Mittlerweile funktioniert das Interface und es wurde mehrfach mit der simulierte
 
 Unser Interface läuft auf einem Banana Pi.
 
-Das Interface trennt die Variablen, die der Server in der SPS ändert und die Variablen, der Server aus der SPS liest:
+Das Interface trennt die Variablen, die der Server in der SPS ändert und die Variablen, die der Server aus der SPS liest:
 
 Die Variablen, die der Server in der SPS ändert, werden `mutable` genannt.
 
@@ -75,11 +75,11 @@ das Interface mit der SPS verbunden.
 
 Wenn ein Fehler während einem der Zustände auftritt, wird fünf mal erneut versucht die Aktionen auszuführen. Wenn auch beim fünften Versuch ein Fehler auftritt, wird das Programm beendet.
 
-Bei jeder Interaktion mit dem Server, erhält das Interface ein `Requesttimeout`. Da Interface wartet die darin definierte Zeit, bis es wider etwas an den Server sendet.
+Bei jeder Interaktion mit dem Server, erhält das Interface ein `Requesttimeout`. Das Interface wartet die darin definierte Zeit, bis es wider etwas an den Server sendet.
 
 ### Initialization
 
-Das Interface sendet einen HTTP GET request an die Datei `pair.php` im Server. Dieser sendet dann einen `Authcode` und ein `Requesttimeout`. Diese werden im Interface gespeichert.
+Das Interface sendet einen HTTP GET request an die Datei `pair.php` im Server. Dieser sendet dann einen `Authcode` und ein `Requesttimeout` zurück an das Interface. Diese werden im Interface gespeichert.
 Außerdem verbindet sich das Interface mit der SPS.
 
 ### Setup
@@ -96,7 +96,7 @@ In einer `Variablesequence` sind alle Variablen eines DB's mit Name, Typ und Wer
 
 Aus der SPS werden über Libnodave die tatsächlichen Werte der Variablen ausgelesen und in zwei `Bytearrays` (eines für `mutable` und eines für `constant`) gespeichert.
 
-In diesem `Bytearray` sind die einzelnen Bytes des zugehörigen DB's binär abgespeichert. Diese Darstellung wird verwendet, um die Bedienung von Libnodave zu vereinfachen.
+In einem solchen `Bytearray` sind die einzelnen Bytes des zugehörigen DB's binär abgespeichert. Diese Darstellung wird verwendet, um die Bedienung von Libnodave zu vereinfachen.
 
 Diese Bytes werden dann anhand der in den `Variablesequences` angegebenen Typen interpretiert. Die sich daraus ergebenden Werte werden dann in die zugehörigen Variablen in den `Variablesequences` geschrieben.
 
@@ -120,7 +120,7 @@ Die `mutable` `Variablesequence` wird in ein `Bytearray` umgewandelt und in die 
 
 Aus der SPS werden über Libnodave die tatsächlichen Werte der `constant` Variablen ausgelesen und in ein `Bytearray` gespeichert.
 
-In diesen `Bytearrays` sind die einzelnen Bytes des zugehörigen DB's binär abgespeichert. Diese Darstellung wird verwendet, um die Bedienung von Libnodave zu vereinfachen.
+In einem solchen `Bytearray` sind die einzelnen Bytes des zugehörigen DB's binär abgespeichert. Diese Darstellung wird verwendet, um die Bedienung von Libnodave zu vereinfachen.
 
 Diese Bytes werden dann anhand der in der `Variablesequence` angegebenen Typen interpretiert. Die sich daraus ergebenden Werte werden dann in die zugehörigen Variablen in der `Variablesequence` geschrieben.
 
@@ -134,9 +134,7 @@ Aus diesen Daten wird dann wieder eine JSON Datei erstellt und über ein HTTP PO
 
 ### Michal
 
-Durch die GFS habe ich gelernt wie man mit Git arbeitet. Vor der GFS habe ich immer alleine gearbeitet und nie kollabiert. Während der GFS lernte ich über die möglichkeiten die git anbietet, um Beispiels weise Konflikte zwischen den `Branches` zu lösen. Zusätzlich habe ich ein paar Funktionalitäten in [github](https://github.com/) kennengelernt wie zum Beispiel `Actions` und `Github Pages`. Ich kann mir vorstellen, dass ich nächstes Jahr diese Funktionalitäten ausnutzen werde.
 
-Auch lernte ich wie man Projekte strukturiert. Vorher habe ich immer die Struktur von Visual Studio genommen. Während der GFS fing ich an `CMake` zu benutzen. Es bietet die Möglichkeit plattformunabhängig das Projekt einzurichten und zu kompilieren. In der Zukunft werde ich `CMake` für C++ Projekte benutzen.
 
 ### Jens
 
