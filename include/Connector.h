@@ -8,6 +8,7 @@ inline auto query(asio::io_context *io, std::string_view host, std::string_view 
 {
 	Session session(*io);
 
+	// Connect to host
 	tcp::resolver		 r(*io);
 	tcp::resolver::query q(host.data(), "http");
 	asio::connect(session.socket(), r.resolve(q));
@@ -25,6 +26,7 @@ inline auto query_debug_get(std::string_view file)
 	if (!in)
 		throw std::runtime_error(std::string("File ").append(file) + " doesn't exist.");
 
+	// Get content from file (SLOW)
 	std::stringstream s;
 	s << in.rdbuf();
 	return s.str();

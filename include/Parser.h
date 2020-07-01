@@ -8,35 +8,16 @@ class Parser
 public:
 	Parser() = default;
 
-	/**
-	 * Sets data for new parsing.
-	 * Resets postition and sets new string.
-	 * @param [in] dat new string to set. String must be alive for the duration of class Parser existance.
-	 */
 	void data(std::string_view dat)
 	{
 		reset();
 		m_data = dat;
 	}
 
-	/**
-	 * Reset position of string.
-	 * String parsing position set to 0.
-	 */
 	void reset() noexcept { m_loc = 0U; }
 
-	/**
-	 * Find pos of delimiter.
-	 * @param [in] delim delimiter
-	 * @return position offset of delimiter
-	 */
 	auto find(char delim) { return m_data.find(delim, m_loc); }
 
-	/**
-	 * Gets string till delimiter.
-	 * @param [in] delim delimiter
-	 * @return optional string_view
-	 */
 	auto get_until(char delim) -> std::optional<std::string_view>
 	{
 		if (const auto loc = find(delim); loc != std::string_view::npos)
@@ -44,11 +25,6 @@ public:
 
 		return std::nullopt;
 	}
-	/**
-	 * Gets string till one of a range of delimiters.
-	 * @param [in] l array of delimiters
-	 * @return optional string_view
-	 */
 	template<size_t _num>
 	auto get_until(const std::array<char, _num> &l) -> std::optional<std::string_view>
 	{
@@ -59,11 +35,6 @@ public:
 
 		return std::nullopt;
 	}
-	/**
-	 * Gets a amount of the string.
-	 * @param [in] count how much to get
-	 * @return optional string_view
-	 */
 	auto get_until(size_t count) -> std::string_view
 	{
 		assert(m_loc + count <= m_data.size() && "String is too short");
@@ -146,7 +117,7 @@ public:
 		return m_data[m_loc + 1];
 	}
 
-	auto at_end() const noexcept -> bool { return m_loc == m_data.size(); }
+	[[nodiscard]] auto at_end() const noexcept -> bool { return m_loc == m_data.size(); }
 
 	void mov(int dis) { m_loc += dis; }
 

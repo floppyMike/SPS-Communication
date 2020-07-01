@@ -15,7 +15,7 @@ public:
 		FuncPack::prep_request(c, &m_p);
 	}
 
-	virtual ~SPSRequester()
+	~SPSRequester()
 	{
 		for (auto &i : m_result) daveFreeResults(&i);
 	}
@@ -45,6 +45,7 @@ public:
 	{
 		std::vector<uint8_t> arr;
 
+		// Pack results into a bytearray
 		for (auto &i : m_result)
 			for (auto *iter_res = i.results; iter_res != i.results + i.numResults; ++iter_res)
 				arr.insert(arr.end(), iter_res->bytes, iter_res->bytes + iter_res->length);
@@ -64,6 +65,7 @@ private:
 	{
 		assert(len <= PDU_LIMIT && "Read request to SPS to large.");
 
+		// If PDU_LIMIT reached flush it.
 		if (m_curr_size + len >= PDU_LIMIT)
 			send();
 
@@ -77,10 +79,8 @@ public:
 	TSPSRead() = delete;
 
 	static void prep_request(daveConnection *c, PDU *p) { davePrepareReadRequest(c, p); }
-
 	static void add_var(PDU *p, int db, int bytes) { daveAddVarToReadRequest(p, daveDB, db, 0, bytes); }
-
-	static int request(daveConnection *c, PDU *p, daveResultSet *rs) { return daveExecReadRequest(c, p, rs); }
+	static auto request(daveConnection *c, PDU *p, daveResultSet *rs) -> int { return daveExecReadRequest(c, p, rs); }
 };
 
 class TSPSWrite
@@ -89,11 +89,9 @@ public:
 	TSPSWrite() = delete;
 
 	static void prep_request(daveConnection *c, PDU *p) { davePrepareWriteRequest(c, p); }
-
 	static void add_var(PDU *p, int db, int bytes, uint8_t *arr)
 	{
 		daveAddVarToWriteRequest(p, daveDB, db, 0, bytes, arr);
 	}
-
-	static int request(daveConnection *c, PDU *p, daveResultSet *rs) { return daveExecWriteRequest(c, p, rs); }
+	static auto request(daveConnection *c, PDU *p, daveResultSet *rs) -> int { return daveExecWriteRequest(c, p, rs); }
 };

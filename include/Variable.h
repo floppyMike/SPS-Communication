@@ -50,8 +50,11 @@ public:
 	template<typename _T, typename = typename std::enable_if_t<std::is_arithmetic_v<_T>>>
 	void fill_var(_T val)
 	{
+		// Fill bytes to reserved vector
 		assert(sizeof(_T) == m_data.size() && "Value size isn't the matching the type of variable.");
 		*reinterpret_cast<_T *>(&m_data.front()) = val;
+
+		// Reverse bytes to match SPS
 		std::reverse(m_data.begin(), m_data.end());
 	}
 
@@ -71,6 +74,7 @@ public:
 
 	[[nodiscard]] auto val_str() const -> std::string
 	{
+		// Prepare data
 		auto dat = m_data;
 		std::reverse(dat.begin(), dat.end());
 

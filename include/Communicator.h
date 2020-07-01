@@ -7,8 +7,8 @@
 #include "VariableSequence.h"
 
 #ifndef SPS_NOT_AVAILABLE
-#include "SPS.h"
-#include "SPSIO.h"
+#	include "SPS.h"
+#	include "SPSIO.h"
 #endif
 
 class RunTime
@@ -20,13 +20,14 @@ public:
 	{
 	}
 
-	auto pair_up(std::string_view sps_host, std::string_view sps_port)
+	auto initialize_sps(std::string_view sps_host, std::string_view sps_port)
 	{
 #ifndef SPS_NOT_AVAILABLE
 		m_sps.connect(sps_host, sps_port);
 #endif // SPS_NOT_AVAILABLE
-		m_server.pair_up(m_host);
 	}
+
+	auto pair_up() { m_server.pair_up(m_host); }
 
 	auto request_varsequence()
 	{
@@ -98,9 +99,9 @@ private:
 		PairerDebug, GetterDebug, PosterDebug
 #endif
 		>
-				  m_server;
+		m_server;
 
-	#ifndef SPS_NOT_AVAILABLE
+#ifndef SPS_NOT_AVAILABLE
 	SPSConnection m_sps;
-	#endif
+#endif
 };

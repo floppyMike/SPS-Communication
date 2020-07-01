@@ -2,8 +2,6 @@
 To Do
 - comments
 - improve memory by limiting variable alloc to 4 bytes
-- create reasonable installation
-- documentation
 */
 
 //#define SPS_NOT_AVAILABLE
@@ -12,6 +10,7 @@ To Do
 #include "Includes.h"
 #include "Logging.h"
 #include "Communicator.h"
+#include "utility.h"
 
 Logger g_log;
 
@@ -40,77 +39,54 @@ auto main(int argc, char **argv) -> int
 
 	RunTime rt(&io, argv[3]);
 
-	// Pairing
-	for (char err_c = 1; true;) try
-		{
-			rt.pair_up(argv[1], argv[2]);
-			break;
-		}
-		catch (const std::exception &e)
-		{
-			g_log.write(Logger::Catagory::FATAL) << "Error " << +err_c << " of 5 during pairing: " << e.what();
-
-			if (err_c++ == 5)
-				return 1;
-		}
-		catch (...)
-		{
-			g_log.write(Logger::Catagory::FATAL, "Unknown error. Exiting.");
-			return 1;
-		}
+	// Initialization
+	if (enclosed_do(
+			[sps_host = argv[1], sps_port = argv[2], &rt] {
+				rt.initialize_sps(sps_host, sps_port);
+				return false;
+			},
+			"SPS initialization")
+		|| enclosed_do(
+			[&rt] {
+				rt.pair_up();
+				return false;
+			},
+			"pairing"))
+		return 1;
 
 	// Setup
-	for (char err_c = 1; true;) try
-		{
-			auto vars = rt.request_varsequence();
+	if (enclosed_do(
+			[&rt] {
+				auto vars = rt.request_varsequence();
 
-			g_log.write(Logger::Catagory::INFO) << "Variables to be read for the init. of mutable variables:\n"
-												<< vars[DB_Type::MUTABLE];
-			g_log.write(Logger::Catagory::INFO) << "Variables to be read for the init. of constant variables:\n"
-												<< vars[DB_Type::CONST];
+				g_log.write(Logger::Catagory::INFO) << "Variables to be read for the init. of mutable variables:\n"
+													<< vars[DB_Type::MUTABLE];
+				g_log.write(Logger::Catagory::INFO) << "Variables to be read for the init. of constant variables:\n"
+													<< vars[DB_Type::CONST];
 
-			rt.init_variables(vars);
-			rt.post_varsequence(vars);
-
-			break;
-		}
-		catch (const std::exception &e)
-		{
-			g_log.write(Logger::Catagory::FATAL) << "Error " << +err_c << " of 5 during setup: " << e.what();
-
-			if (err_c++ == 5)
-				return 1;
-		}
-		catch (...)
-		{
-			g_log.write(Logger::Catagory::FATAL, "Unknown error. Exiting.");
-			return 1;
-		}
+				rt.init_variables(vars);
+				rt.post_varsequence(vars);
+				return false;
+			},
+			"setup"))
+		return 1;
 
 	// Update
-	for (char err_c = 1; true;) try
-		{
-			auto vars = rt.request_varsequence();
+	if (enclosed_do(
+			[&rt] {
+				auto vars = rt.request_varsequence();
 
-			g_log.write(Logger::Catagory::INFO) << "Variables to be written:\n" << vars[DB_Type::MUTABLE];
-			g_log.write(Logger::Catagory::INFO) << "Variables to be read (values will be overwritten):\n"
-												<< vars[DB_Type::CONST];
+				g_log.write(Logger::Catagory::INFO) << "Variables to be written:\n" << vars[DB_Type::MUTABLE];
+				g_log.write(Logger::Catagory::INFO) << "Variables to be read (values will be overwritten):\n"
+													<< vars[DB_Type::CONST];
 
-			rt.update_sps(vars);
-			rt.post_varsequence(vars);
+				rt.update_sps(vars);
+				rt.post_varsequence(vars);
 
-			err_c = 1;
-		}
-		catch (const std::exception &e)
-		{
-			g_log.write(Logger::Catagory::FATAL) << "Error " << +err_c << " of 5 during updating SPS: " << e.what();
+				return true;
+			},
+			"updating SPS"))
+		return 1;
 
-			if (err_c++ == 5)
-				return 1;
-		}
-		catch (...)
-		{
-			g_log.write(Logger::Catagory::FATAL, "Unknown error. Exiting.");
-			return 1;
-		}
+	return 0;
 }

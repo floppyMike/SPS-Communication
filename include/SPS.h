@@ -96,6 +96,7 @@ private:
 
 	void _open_socket_(std::string_view ip, std::string_view port)
 	{
+		// Open the TCP connection to SPS using given port
 		m_serial.wfd = m_serial.rfd = openSocket(guarded_get(str_to_num<int>(port), "SPS Port isn't a valid number."),
 												 const_cast<char *>(ip.data()));
 		if (m_serial.rfd == 0)
@@ -105,25 +106,24 @@ private:
 
 	void _init_interface_(int protocol)
 	{
+		// Initialize info about PLC connection -> serial, name, ---, protocol, speed
 		m_interface = daveNewInterface(m_serial, const_cast<char *>("IF1"), 0, protocol, daveSpeed187k);
 		daveSetTimeout(m_interface, 5000000);
 	}
 
 	void _init_adapter_()
 	{
-		for (size_t i = 0; i < 3; ++i)
-			if (daveInitAdapter(m_interface) == 0)
-				break;
-			else
-			{
-				daveDisconnectAdapter(m_interface);
-				if (i == 2)
-					throw std::runtime_error("Couldn't connect to Adapter.");
-			}
+		// Initialize libnodave adapter
+		if (daveInitAdapter(m_interface) != 0)
+		{
+			daveDisconnectAdapter(m_interface);
+			throw std::runtime_error("Couldn't connect to SPS Adapter.");
+		}
 	}
 
 	void _init_connection_()
 	{
+		// Create connection  -> interface, MPI, rack, CPU slot 
 		m_connection = daveNewConnection(m_interface, 2, 0, 0);
 		if (daveConnectPLC(m_connection) != 0)
 			throw std::runtime_error("Couldn't connect to PLC.");

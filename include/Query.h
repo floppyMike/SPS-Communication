@@ -14,6 +14,7 @@ inline auto build_get(std::string_view host, std::string_view path, std::string_
 	std::string chain("GET ");
 	chain.append(path);
 
+	// Append parameters if available
 	if (!parameters.empty())
 		chain.push_back('?'), chain.append(parameters);
 
@@ -43,8 +44,10 @@ auto build_para(const _Array &para)
 
 	std::string str;
 
+	// Create parameters
 	for (const auto &i : para) str += std::string(i.first) + '=' + std::string(i.second) + '&';
 
+	// Pop last &
 	if (!str.empty())
 		str.pop_back();
 
@@ -54,7 +57,7 @@ auto build_para(const _Array &para)
 class Session
 {
 public:
-	Session(asio::io_context &io)
+	explicit Session(asio::io_context &io)
 		: m_socket(io)
 	{
 	}
@@ -67,7 +70,7 @@ public:
 			std::clog << "Socket didn't close correctly. Message: " << err.message() << '\n';
 	}
 
-	auto &query(std::string_view head)
+	auto query(std::string_view head) -> auto &
 	{
 		_send_request_(head);
 		_validate_reponse_();
@@ -77,7 +80,7 @@ public:
 		return m_message;
 	}
 
-	tcp::socket &socket() noexcept { return m_socket; }
+	auto socket() noexcept -> tcp::socket & { return m_socket; }
 
 private:
 	tcp::socket		m_socket;
@@ -129,7 +132,7 @@ private:
 				m_message.content.append(_buf_to_str_(n));
 				break;
 			}
-			else if (err)
+			if (err)
 				throw std::runtime_error(err.message());
 
 			m_message.content.append(_buf_to_str_(n));
@@ -137,7 +140,7 @@ private:
 		}
 	}
 
-	std::string _buf_to_str_(size_t len)
+	auto _buf_to_str_(size_t len) -> std::string
 	{
 		asio::streambuf::const_buffers_type buf_type = m_buf.data();
 		return std::string(asio::buffers_begin(buf_type), asio::buffers_begin(buf_type) + len);

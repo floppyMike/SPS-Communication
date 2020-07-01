@@ -76,6 +76,7 @@ public:
 
 	void from_string(std::string_view str)
 	{
+		// Parse string without turning strings to numbers
 		if (m_doc.Parse<rj::kParseNumbersAsStringsFlag>(str.data(), str.size()).HasParseError())
 			throw std::runtime_error(rj::GetParseError_En(m_doc.GetParseError()));
 	}

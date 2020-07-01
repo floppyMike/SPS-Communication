@@ -12,6 +12,7 @@ public:
 
 	auto prepare_seqs(JSONValue settings) -> void
 	{
+		// Get const and mutable from json
 		for (auto &i : settings)
 			if (::strcmp(i.name.GetString(), "const") == 0)
 				m_seqs[DB_Type::CONST].db(JSONValue(i.value).num<int>());
@@ -22,6 +23,7 @@ public:
 	}
 	auto prepare_seqs() -> void
 	{
+		// Set default const and mutable
 		m_seqs[DB_Type::CONST].db(1);
 		m_seqs[DB_Type::MUTABLE].db(2);
 	}
@@ -30,11 +32,13 @@ public:
 	{
 		std::ifstream file_in(filename.data(), std::ios::in);
 
+		// Ignore till section
 		while (file_in.ignore(std::numeric_limits<std::streamsize>::max(), '#'))
 		{
 			std::string t;
 			std::getline(file_in, t);
 
+			// Match section
 			if (t == "constant")
 				m_seqs[DB_Type::CONST] = _get_vars_(file_in);
 			else if (t == "mutable")
@@ -49,6 +53,7 @@ public:
 		{
 			bool exists_f = false;
 
+			// Fill variable with json value
 			for (auto &member : data_inner)
 				if (iter_seq.name() == member.name.GetString())
 				{
@@ -69,6 +74,7 @@ private:
 
 	static auto _str_to_type_(std::string_view str) -> Variable::Type
 	{
+		// Match string to array of defined types
 		for (size_t i = 0; i < Variable::Type::MAX; ++i)
 			if (str == Variable::TYPE_STR[i])
 				return static_cast<Variable::Type>(i);
@@ -80,6 +86,7 @@ private:
 	{
 		std::vector<Variable> data;
 
+		// Check if variable name available
 		for (std::string var_name; in.peek() != '\n' && std::getline(in, var_name, ':');)
 		{
 			// Check if nothing available further

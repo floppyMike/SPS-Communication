@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Includes.h"
+#include "Logging.h"
 
 template<typename T, template<typename> class crtpType>
 struct crtp
@@ -13,20 +14,8 @@ private:
 	friend crtpType<T>;
 };
 
-template<typename T, template<typename> class Ex1, template<typename> class... Ex>
-struct MixBuilder
-{
-	using type = Ex1<typename MixBuilder<T, Ex...>::type>;
-};
-
-template<typename T, template<typename> class Ex>
-struct MixBuilder<T, Ex>
-{
-	using type = Ex<T>;
-};
-
 template<typename T>
-std::optional<T> str_to_num(std::string_view str) noexcept
+auto str_to_num(std::string_view str) noexcept -> std::optional<T>
 {
 	if (T temp; str.empty() || [&temp, &str]() -> bool {
 			if constexpr (std::is_floating_point_v<T>) // g++ and clang++ don't support floating point from_chars
@@ -58,32 +47,32 @@ auto guarded_get(std::optional<_T> &&opt, std::string_view message_on_error)
 {
 	if (opt.has_value())
 		return opt.value();
-	else
-		throw std::runtime_error(message_on_error.data());
+
+	throw std::runtime_error(message_on_error.data());
 }
 
-const char *guarded_get_string(const rj::Value &val)
+auto guarded_get_string(const rj::Value &val) -> const char *
 {
 	if (val.IsString())
 		return val.GetString();
-	else
-		throw std::runtime_error("String expected at data variable.");
+
+	throw std::runtime_error("String expected at data variable.");
 }
 
-const auto &guarded_get_section(const rj::Value &val, std::string_view sec)
+auto guarded_get_section(const rj::Value &val, std::string_view sec) -> const auto &
 {
 	if (auto iter = val.FindMember(sec.data()); iter != val.MemberEnd())
 		return iter->value;
-	else
-		throw std::runtime_error("Object \"" + std::string(sec) + "\" not found in the json data.");
+
+	throw std::runtime_error("Object \"" + std::string(sec) + "\" not found in the json data.");
 }
 
-auto &guarded_get_section(rj::Value &val, std::string_view sec)
+auto guarded_get_section(rj::Value &val, std::string_view sec) -> auto &
 {
 	if (auto iter = val.FindMember(sec.data()); iter != val.MemberEnd())
 		return iter->value;
-	else
-		throw std::runtime_error("Object \"" + std::string(sec) + "\" not found in the json data.");
+
+	throw std::runtime_error("Object \"" + std::string(sec) + "\" not found in the json data.");
 }
 
 auto append_filename(std::string f, std::string_view name)
@@ -92,94 +81,30 @@ auto append_filename(std::string f, std::string_view name)
 	return f;
 }
 
-// template<typename _Typ, typename _Parent>
-// class Getter_Setter
-//{
-//	using mem_func_set_t = void (_Parent::*)(const _Typ&);
-//	using mem_func_get_t = const _Typ& (_Parent::*)();
-//
-// public:
-//	Getter_Setter() = delete;
-//
-//	Getter_Setter(const Getter_Setter&) = delete;
-//	Getter_Setter(Getter_Setter&&) = delete;
-//
-//	Getter_Setter& operator=(const Getter_Setter&) = delete;
-//	Getter_Setter& operator=(Getter_Setter&&) = delete;
-//
-//	Getter_Setter(_Parent* p, mem_func_get_t get, mem_func_set_t set)
-//		: m_p(p)
-//		, m_getter(get)
-//		, m_setter(set)
-//	{
-//	}
-//
-//	operator _Typ() const { return (m_p->*m_getter)(); }
-//
-//	auto& operator=(const _Typ& t) { (m_p->*m_setter)(t); return *this; }
-//	auto& operator=(_Typ&& t) { (m_p->*m_setter)(std::move(t));  return *this; }
-//
-//	auto& operator()(const _Typ& t) { (m_p->*m_setter)(t); return *m_p; }
-//	auto& operator()(_Typ&& t) { (m_p->*m_setter)(std::move(t));  return *m_p; }
-//
-// private:
-//	_Parent* m_p;
-//
-//	mem_func_get_t m_getter;
-//	mem_func_set_t m_setter;
-//};
-//
-//
-// template<typename _Typ, typename _Parent>
-// class Getter
-//{
-//	using mem_func_t = const _Typ& (_Parent::*)();
-//
-// public:
-//	Getter() = delete;
-//
-//	Getter(const Getter&) = default;
-//	Getter(Getter&&) = default;
-//
-//	Getter& operator=(const Getter&) = delete;
-//	Getter& operator=(Getter&&) = delete;
-//
-//	Getter(_Parent* par, mem_func_t f)
-//		: m_parent(par)
-//		, m_getter(f)
-//	{
-//	}
-//
-//	operator const _Typ&() const { return (m_parent->*m_getter)(); }
-//
-// private:
-//	_Parent* m_parent;
-//	mem_func_t m_getter;
-//};
-//
-// template<typename _Typ, typename _Parent>
-// class Setter
-//{
-//	using mem_func_t = void (_Parent::*)(const _Typ&);
-//
-// public:
-//	Setter() = delete;
-//
-//	Setter(const Setter&) = default;
-//	Setter(Setter&&) = default;
-//
-//	Setter& operator=(const Setter&) = delete;
-//	Setter& operator=(Setter&&) = delete;
-//
-//	Setter(_Parent* par, mem_func_t f)
-//		: m_parent(par)
-//		, m_getter(f)
-//	{
-//	}
-//
-//	operator const _Typ& () const { return (m_parent->*m_getter)(); }
-//
-// private:
-//	_Parent* m_parent;
-//	mem_func_t m_getter;
-//};
+// func -> bool if should continue
+template<typename F>
+auto enclosed_do(F &&func, std::string_view activity)
+{
+	for (char err_c = 1; true;) try
+		{
+			if (!func())
+				break;
+
+			err_c = 1;
+		}
+		catch (const std::exception &e)
+		{
+			g_log.write(Logger::Catagory::FATAL)
+				<< "Error " << +err_c << " of 5 during " << activity << ": " << e.what();
+
+			if (err_c++ == 5)
+				return true;
+		}
+		catch (...)
+		{
+			g_log.write(Logger::Catagory::FATAL, "Unknown error. Exiting.");
+			return true;
+		}
+
+	return false;
+}
