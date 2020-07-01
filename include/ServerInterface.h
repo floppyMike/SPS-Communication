@@ -8,7 +8,6 @@
 #include "Interpeter.h"
 #include "Stockmanager.h"
 #include "utility.h"
-#include <string_view>
 
 template<typename Impl>
 class Pairer : public crtp<Impl, Pairer>
