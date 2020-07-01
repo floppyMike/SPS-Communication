@@ -1,0 +1,47 @@
+#START
+#DEBUG
+Hello There
+#DATA
+{
+	"requesttimeout": "5",
+	"data": {
+		"settings": {
+			"const": "10",
+			"mutable": "21"
+		},
+		"data": {
+			"cbit": "1",
+			"cbyte": "34",
+			"cword": "433",
+			"cdword": "43534",
+			"cchar": "34",
+			"cint": "-45",
+			"cdint": "-4634",
+			"creal": "5.6",
+			"mbit": "1",
+			"mbyte": "34",
+			"mword": "433",
+			"mdword": "43534",
+			"mchar": "34",
+			"mint": "-45",
+			"mdint": "-4634",
+			"mreal": "5.6"
+		},
+		"usermodifiabledata": ["word", "int"],
+		"friendly": {
+			"settingsvar": {
+			},
+			"datavar": {
+			},
+			"datavalue": {
+			},
+			"type": "SPS"
+		},
+		"preferredupdatetime": 10,
+		"device": {
+			"type": "null", 
+			"name": "ASSSSSSSSSS"
+		}
+	}
+}
+#END
