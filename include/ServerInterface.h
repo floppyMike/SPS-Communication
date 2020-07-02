@@ -23,7 +23,7 @@ protected:
 			[host, param, io = this->underlying()->io()] { return query(io, host, param); });
 
 		// Get authcode from json
-		const auto authcode = json.var("authcode").string();
+		const std::string authcode = json.var("authcode").string();
 
 		// Write authcode to authdata.txt
 		std::ofstream fileout(PAIR_FILE_NAME.data(), std::ios::binary | std::ios::out);
@@ -59,7 +59,7 @@ protected:
 		auto json = this->underlying()->communicate([&file_full] { return query_debug_get(file_full); });
 
 		// Get authcode from json
-		const auto authcode = json.var("authcode").string();
+		const std::string authcode = json.var("authcode").string();
 
 		// Write authcode to authdata.txt
 		std::ofstream fileout(PAIR_FILE_NAME.data(), std::ios::binary | std::ios::out);
