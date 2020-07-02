@@ -87,7 +87,8 @@ public:
 #endif // SPS_NOT_AVAILABLE
 	}
 
-	auto post_varsequence(const VariableSequences &var) { m_server.post(m_host, var); }
+	auto post_varsequence_update(const VarSequence &var) { m_server.post(m_host, "UPDATE", var); }
+	auto post_varsequence_replace(const VariableSequences &var) { m_server.post(m_host, "PUT", var); }
 
 private:
 	std::string_view m_host;
