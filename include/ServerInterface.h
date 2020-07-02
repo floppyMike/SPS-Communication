@@ -172,7 +172,7 @@ public:
 	}
 
 	template<typename _P>
-	auto post(std::string_view host, _P &&var)
+	auto post(std::string_view host, std::string_view requesttype, _P &&var)
 	{
 		// Create json reply
 		const auto str = m_doc.generate_json_reply(var).to_string();
@@ -181,7 +181,7 @@ public:
 		return this->_post(
 			host,
 			build_post(host, "/interact.php",
-					   build_para(std::array{ Parameter{ "type", "raw" }, Parameter{ "requesttype", "PUT" },
+					   build_para(std::array{ Parameter{ "type", "raw" }, Parameter{ "requesttype", requesttype },
 											  Parameter{ "authcode", m_authcode }, Parameter{ "data", str } })));
 	}
 

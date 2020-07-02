@@ -65,7 +65,8 @@ auto main(int argc, char **argv) -> int
 													<< vars[DB_Type::CONST];
 
 				rt.init_variables(vars);
-				rt.post_varsequence(vars);
+				rt.post_varsequence_replace(vars);
+
 				return false;
 			},
 			"setup"))
@@ -81,7 +82,7 @@ auto main(int argc, char **argv) -> int
 													<< vars[DB_Type::CONST];
 
 				rt.update_sps(vars);
-				rt.post_varsequence(vars);
+				rt.post_varsequence_update(vars[DB_Type::CONST]);
 
 				return true;
 			},
