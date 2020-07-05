@@ -37,10 +37,6 @@ public:
 																	m_stock.GetAllocator()),
 											  m_stock.GetAllocator()),
 							   m_stock.GetAllocator())
-					.AddMember(rj::Value().SetString("datavar", m_stock.GetAllocator()),
-							   rj::Value(rj::Type::kObjectType), m_stock.GetAllocator())
-					.AddMember(rj::Value().SetString("datavalue", m_stock.GetAllocator()),
-							   rj::Value(rj::Type::kObjectType), m_stock.GetAllocator())
 					.AddMember(rj::Value().SetString("type", m_stock.GetAllocator()),
 							   rj::Value().SetString("SPS", m_stock.GetAllocator()), m_stock.GetAllocator()),
 				m_stock.GetAllocator())
@@ -61,8 +57,6 @@ public:
 		doc.CopyFrom(m_stock, doc.GetAllocator());
 
 		_add_data_(doc, t);
-		_add_friendly_vardisc_(doc, t);
-		_add_friendly_valdisc_(doc, t);
 
 		return JSONRoot(std::move(doc));
 	}
@@ -74,11 +68,7 @@ public:
 		_add_usermod_(doc, t[DB_Type::MUTABLE]);
 
 		for (const auto &i : t)
-		{
 			_add_data_(doc, i);
-			_add_friendly_vardisc_(doc, i);
-			_add_friendly_valdisc_(doc, i);
-		}
 
 		return JSONRoot(std::move(doc));
 	}
@@ -105,21 +95,5 @@ private:
 		auto &root_modifiable = doc["usermodifiabledata"];
 		for (const auto &i : t)
 			root_modifiable.PushBack(rj::Value().SetString(i.name().data(), doc.GetAllocator()), doc.GetAllocator());
-	}
-	static void _add_friendly_vardisc_(rj::Document &doc, const VarSequence &t)
-	{
-		auto &root_friendly_datavar = doc["friendly"]["datavar"];
-		for (const auto &i : t)
-			root_friendly_datavar.AddMember(rj::Value().SetString(i.name().data(), doc.GetAllocator()),
-											rj::Value().SetString(i.name().data(), doc.GetAllocator()),
-											doc.GetAllocator());
-	}
-	static void _add_friendly_valdisc_(rj::Document &doc, const VarSequence &t)
-	{
-		auto &root_friendly_datavalue = doc["friendly"]["datavalue"];
-		for (const auto &i : t)
-			root_friendly_datavalue.AddMember(rj::Value().SetString(i.name().data(), doc.GetAllocator()),
-											  rj::Value().SetString(i.val_str().data(), doc.GetAllocator()),
-											  doc.GetAllocator());
 	}
 };
