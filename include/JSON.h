@@ -47,6 +47,8 @@ public:
 		return guarded_get(str_to_num<Num>(string()), "Number at JSON element not found.");
 	}
 
+	[[nodiscard]] auto type() const noexcept { return m_val.GetType(); }
+
 	[[nodiscard]] auto data() const noexcept -> const auto & { return m_val; }
 	auto			   data() noexcept -> auto & { return m_val; }
 
@@ -91,7 +93,7 @@ public:
 	}
 
 	template<typename... _T>
-	auto var(const char *first, _T &&... names) 
+	auto var(const char *first, _T &&... names)
 	{
 		return JSONValue(m_doc).var(first, std::forward<_T>(names)...);
 	}

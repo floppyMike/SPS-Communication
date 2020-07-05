@@ -45,7 +45,7 @@ public:
 
 		interpret.prepare_vars("interpret.txt");
 
-		if (auto s = root_data.safe_var("data"); s.has_value())
+		if (auto s = root_data.safe_var("data"); s.has_value() && s->type() == rj::Type::kObjectType)
 			interpret.fill_vars(s.value());
 
 		// Give sequences
