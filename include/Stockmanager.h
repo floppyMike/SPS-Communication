@@ -67,17 +67,24 @@ public:
 
 		_add_usermod_(doc, t[DB_Type::MUTABLE]);
 
-		for (const auto &i : t)
-			_add_data_(doc, i);
+		for (const auto &i : t) _add_data_(doc, i);
 
 		return JSONRoot(std::move(doc));
 	}
 
-	void update_stock(JSONValue root_device)
+	void update_stock(JSONValue root)
 	{
 		// Copy device to stock device
-		const auto member = m_stock.FindMember("device");
-		member->value = rj::Value().CopyFrom(root_device.data(), m_stock.GetAllocator()), m_stock.GetAllocator();
+		const auto member_device = m_stock.FindMember("device");
+		member_device->value	 = rj::Value().CopyFrom(root.var("device").data(), m_stock.GetAllocator()),
+		m_stock.GetAllocator();
+
+		// Copy database settings to stock device
+		const auto member_settings = m_stock.FindMember("settings");
+		member_settings->value.FindMember("const")->value =
+			rj::Value().SetString(root.var("settings", "const").data().GetString(), m_stock.GetAllocator());
+		member_settings->value.FindMember("mutable")->value =
+			rj::Value().SetString(root.var("settings", "mutable").data().GetString(), m_stock.GetAllocator());
 	}
 
 private:

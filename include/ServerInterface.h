@@ -167,7 +167,7 @@ public:
 														Parameter{ "requesttype", "GET" } })));
 
 		// Update stock json with Server device data
-		m_doc.update_stock(json.var("data", "device"));
+		m_doc.update_stock(json.var("data"));
 		return json;
 	}
 
@@ -176,6 +176,7 @@ public:
 	{
 		// Create json reply
 		const auto str = m_doc.generate_json_reply(var).to_string();
+		g_log.write(Logger::Catagory::INFO, str);
 
 		// POST json to server
 		return this->_post(
@@ -192,7 +193,9 @@ public:
 		g_log.write(Logger::Catagory::INFO, "Waiting through timeout...");
 		std::this_thread::sleep_until(m_time_till);
 
-		auto json = ResponseHandler::parse_content(q());
+		const auto m = q();
+		g_log.write(Logger::Catagory::INFO, m);
+		auto json = ResponseHandler::parse_content(m);
 
 		// Update timeout
 		const auto timeout = std::chrono::seconds(json.var("requesttimeout").template num<unsigned int>());
