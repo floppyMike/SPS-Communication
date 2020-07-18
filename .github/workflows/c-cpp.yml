@@ -29,11 +29,11 @@ jobs:
         shell: bash
         run: | 
           mkdir build && cd build && cmake -A win32 .. && cd src
-          "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\msbuild.exe" /p:Configuration=Release /p:Platform=x86 SPSCom.vcxproj
+          "C:\Program Files (x86)\Microsoft Visual Studio\2019\Enterprise\MSBuild\Current\Bin\msbuild.exe" //p:Configuration=Release //p:Platform=x86 SPSCom.vcxproj
 
       - name: Build on ubuntu
         if: startsWith(matrix.os, 'ubuntu-latest')
         shell: bash
         run: | 
-          mkdir build && cd build && cmake -D CMAKE_CXX_COMPILER=/usr/bin/g++-10 ..
+          mkdir build && cd build && cmake -D CMAKE_CXX_COMPILER=/usr/bin/gcc-10 ..
           make
