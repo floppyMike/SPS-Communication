@@ -1,0 +1,45 @@
+name: C/C++ CI
+
+on: 
+  push:
+  commit_comment:
+  release:
+
+jobs:
+  build:
+    name: ${{ matrix.config.os }}
+    runs-on: ${{ matrix.config.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, ubuntu-latest]
+
+    steps:
+      # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
+      - uses: actions/checkout@v2
+
+      - name: Print env
+        run: |
+          echo ${{ matrix.os }}
+          
+      - name: Install dependencies on windows
+        if: startsWith(matrix.os, 'windows-latest')
+        run: |
+          cl /?
+          cmake --version
+
+      - name: Install dependencies on ubuntu
+        if: startsWith(matrix.os, 'ubuntu-latest')
+        run: |
+          g++ --version
+          cmake --version
+          
+      - name: Build on windows
+        if: startsWith(matrix.os, 'windows-latest')
+        shell: bash
+        run: mkdir build && cd build && cmake -A win32 .. && cd src && MSBuild.exe SPSCom.vcxproj
+
+      - name: Build on ubuntu
+        if: startsWith(matrix.os, 'ubuntu-latest')
+        shell: bash
+        run: mkdir build && cd build && cmake .. && make
