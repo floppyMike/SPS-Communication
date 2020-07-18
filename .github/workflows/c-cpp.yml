@@ -2,8 +2,7 @@ name: C/C++ CI
 
 on: 
   push:
-  commit_comment:
-  release:
+  pull_request:
 
 jobs:
   build:
