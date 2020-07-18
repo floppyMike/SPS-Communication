@@ -17,16 +17,6 @@ jobs:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
 
-      - name: Print env
-        run: |
-          echo ${{ matrix.os }}
-          
-      - name: Install dependencies on windows
-        if: startsWith(matrix.os, 'windows-latest')
-        run: |
-          "\Program Files (x86)\Microsoft Visual Studio\2019\Community\MSBuild\Current\Bin\msbuild.exe" -version
-          cmake --version
-
       - name: Install dependencies on ubuntu
         if: startsWith(matrix.os, 'ubuntu-latest')
         run: |
@@ -45,5 +35,5 @@ jobs:
         if: startsWith(matrix.os, 'ubuntu-latest')
         shell: bash
         run: | 
-          mkdir build && cd build && cmake ..
+          mkdir build && cd build && cmake -D CMAKE_CXX_COMPILER=g++-10 ..
           make
