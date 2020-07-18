@@ -16,14 +16,6 @@ jobs:
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
       - uses: actions/checkout@v2
-
-      - name: Install dependencies on ubuntu
-        if: startsWith(matrix.os, 'ubuntu-latest')
-        run: |
-          sudo apt update
-          sudo apt install gcc-9
-          CXX=/usr/bin/gcc-9
-          cmake --version
           
       - name: Build on windows
         if: startsWith(matrix.os, 'windows-latest')
@@ -36,5 +28,5 @@ jobs:
         if: startsWith(matrix.os, 'ubuntu-latest')
         shell: bash
         run: | 
-          mkdir build && cd build && cmake ..
+          mkdir build && cd build && cmake -D CMAKE_CXX_COMPILER=g++-9 ..
           make
