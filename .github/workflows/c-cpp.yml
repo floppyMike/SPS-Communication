@@ -21,7 +21,8 @@ jobs:
         if: startsWith(matrix.os, 'ubuntu-latest')
         run: |
           sudo apt update
-          sudo apt install gcc-10
+          sudo apt install gcc-9
+          CXX=/usr/bin/gcc-9
           cmake --version
           
       - name: Build on windows
@@ -35,5 +36,5 @@ jobs:
         if: startsWith(matrix.os, 'ubuntu-latest')
         shell: bash
         run: | 
-          mkdir build && cd build && cmake -D CMAKE_CXX_COMPILER=/usr/bin/gcc-10 ..
+          mkdir build && cd build && cmake ..
           make
