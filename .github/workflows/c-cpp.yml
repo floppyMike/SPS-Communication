@@ -24,6 +24,7 @@ jobs:
           wget https://sourceforge.net/projects/libnodave/files/libnodave/libnodave-0.8.5.1/libnodave-0.8.5.1.tar.gz
           tar -xvzf libnodave-0.8.5.1.tar.gz
           cd libnodave-0.8.5.1
+          sudo make
           sudo make install
           
       - name: Build on windows
