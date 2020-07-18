@@ -21,6 +21,10 @@ jobs:
         if: startsWith(matrix.os, 'ubuntu-latest')
         shell: bash
         run: |
+          sudo dpkg --add-architecture i386
+          sudo apt update
+          sudo apt install libc6:i386 libncurses5:i386 libstdc++6:i386
+          
           wget https://sourceforge.net/projects/libnodave/files/libnodave/libnodave-0.8.5.1/libnodave-0.8.5.1.tar.gz
           tar -xvzf libnodave-0.8.5.1.tar.gz
           cd libnodave-0.8.5.1
@@ -38,5 +42,5 @@ jobs:
         if: startsWith(matrix.os, 'ubuntu-latest')
         shell: bash
         run: | 
-          mkdir build && cd build && cmake -D CMAKE_CXX_COMPILER=g++-9 ..
+          mkdir build && cd build && cmake -D CMAKE_CXX_COMPILER=g++-9 -D CMAKE_CXX_FLAGS=-m32 ..
           make
