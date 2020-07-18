@@ -24,7 +24,7 @@ jobs:
       - name: Install dependencies on windows
         if: startsWith(matrix.os, 'windows-latest')
         run: |
-          cl /?
+          MSBuild.exe -version
           cmake --version
 
       - name: Install dependencies on ubuntu
@@ -36,9 +36,13 @@ jobs:
       - name: Build on windows
         if: startsWith(matrix.os, 'windows-latest')
         shell: bash
-        run: mkdir build && cd build && cmake -A win32 .. && cd src && MSBuild.exe SPSCom.vcxproj
+        run: | 
+          mkdir build && cd build && cmake -A win32 .. && cd src
+          MSBuild.exe SPSCom.vcxproj
 
       - name: Build on ubuntu
         if: startsWith(matrix.os, 'ubuntu-latest')
         shell: bash
-        run: mkdir build && cd build && cmake .. && make
+        run: | 
+          mkdir build && cd build && cmake ..
+          make
