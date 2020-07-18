@@ -42,5 +42,5 @@ jobs:
         if: startsWith(matrix.os, 'ubuntu-latest')
         shell: bash
         run: | 
-          mkdir build && cd build && cmake -D CMAKE_CXX_COMPILER=g++-9 -D CMAKE_SYSTEM_PROCESSOR=x86 ..
+          mkdir build && cd build && cmake -A x86 -D CMAKE_CXX_COMPILER=g++-9 ..
           make
